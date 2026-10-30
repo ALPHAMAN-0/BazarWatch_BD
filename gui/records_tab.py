@@ -211,6 +211,10 @@ class RecordsTab(Tab):
             row=2, column=0, columnspan=6, sticky="nsew", pady=(12, 0)
         )
         self.table.double_click_handler(self._edit_selected)
+        # The buttons follow the row the user clicks.
+        self.table.tree.bind(
+            "<<TreeviewSelect>>", lambda event: self._update_buttons()
+        )
         self.rowconfigure(2, weight=1)
         self.columnconfigure(0, weight=1)
 
@@ -257,6 +261,10 @@ class RecordsTab(Tab):
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
 
+        # Rebuilding the table drops the selection, so remember which
+        # row was chosen and put the selection back afterwards.
+        chosen = self.table.selected_id()
+
         self.table.clear()
         for record in results:
             level, z_value, pct_value = alert_level(
@@ -284,6 +292,9 @@ class RecordsTab(Tab):
                 level=level,
                 item_id=record.record_id,
             )
+
+        if chosen and self.table.tree.exists(chosen):
+            self.table.tree.selection_set(chosen)
 
         self.status_var.set(f"{len(results)} record(s) shown.")
         self._update_buttons()

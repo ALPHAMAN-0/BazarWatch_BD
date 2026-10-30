@@ -422,32 +422,61 @@ class BazarManager:
         if not user.can_edit(record):
             raise PermissionDeniedError("You can only edit your own price records.")
 
-        if "price" in changes:
-            record.price = validate_price(changes["price"])
+        # Every value is checked before anything is changed, so a
+        # refused edit leaves the record exactly as it was.
+        new_price = (
+            validate_price(changes["price"]) if "price" in changes else record.price
+        )
         if "market" in changes:
             if not self._market_exists(changes["market"]):
                 raise ValidationError(f"'{changes['market']}' is not a known market.")
-            record.market = changes["market"]
+            new_market = changes["market"]
+        else:
+            new_market = record.market
         if "date" in changes:
-            record.date = validate_date(changes["date"]).isoformat()
+            new_date = validate_date(changes["date"]).isoformat()
+        else:
+            new_date = record.date
         if "product_id" in changes:
             product = self.get_product(changes["product_id"])
-            record.product_id = product.product_id
+            new_product_id = product.product_id
+        else:
+            new_product_id = record.product_id
 
         # The date, market or product may have changed, so the same-day
         # duplicate rule has to be checked again.
-        duplicate = self._find_duplicate(record)
+        candidate = PriceRecord(
+            record.record_id,
+            new_product_id,
+            new_market,
+            new_date,
+            new_price,
+            record.added_by,
+        )
+        duplicate = self._find_duplicate(candidate, ignore_id=record.record_id)
         if duplicate is not None:
             raise DuplicateIDError(
                 "Another record already covers that product, market and date."
             )
+
+        record.product_id = new_product_id
+        record.market = new_market
+        record.date = new_date
+        record.price = new_price
         self.save_all()
         return record
 
-    def _find_duplicate(self, record: PriceRecord) -> PriceRecord | None:
-        """Find another record with the same product, market, date and user."""
+    def _find_duplicate(
+        self, record: PriceRecord, ignore_id: str | None = None
+    ) -> PriceRecord | None:
+        """Find another record with the same product, market, date and user.
+
+        ``ignore_id`` names a record that must not count as a duplicate --
+        the record being edited, for example, which is compared against a
+        throwaway candidate rather than against itself.
+        """
         for other in self.records:
-            if other is record:
+            if ignore_id is not None and other.record_id == ignore_id:
                 continue
             if other.key() == record.key():
                 return other

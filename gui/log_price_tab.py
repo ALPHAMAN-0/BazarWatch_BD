@@ -98,6 +98,14 @@ class LogPriceTab(Tab):
         self.columnconfigure(0, weight=1)
 
     # -- data ----------------------------------------------------------
+    def refresh(self) -> None:
+        """Reload the tab.
+
+        The main window calls this whenever the data changes, so the
+        dropdowns have to be rebuilt here as well.
+        """
+        self.refresh_choices()
+
     def refresh_choices(self) -> None:
         """Reload the product and market dropdowns."""
         show_bn = self.manager.show_bangla_names()
