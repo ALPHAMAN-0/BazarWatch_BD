@@ -3,4 +3,8 @@ __pycache__/
 *.pyo
 *.tmp
 .DS_Store
-data/error.log
+
+# The runtime data folder is created from scratch by the app or by
+# `python generate_sample_data.py`, so it is not kept in the repository.
+data/
+reports/
