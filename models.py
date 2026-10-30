@@ -18,15 +18,19 @@ import config
 
 
 def _setting(settings: dict, key: str, default):
-    """One setting, or its default when the setting is missing or empty.
+    """One setting, or its default when the setting is missing or unusable.
 
     A hand-edited settings file must not be able to crash the alert
-    code, so a missing or null value falls back to the default.
+    code, so a missing, null or non-numeric value falls back to the
+    default.
     """
     value = settings.get(key)
     if value is None:
         return default
-    return value
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 class Product:

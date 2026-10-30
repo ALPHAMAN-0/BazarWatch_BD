@@ -210,3 +210,28 @@ DEFAULT_SETTINGS = {
     "recent_days": 14,
     "show_bangla_names": True,
 }
+
+# The settings that hold a number.  The rest — the market list and the
+# Bangla-name switch — hold something else, and are left alone when a
+# number cannot be read.
+NUMERIC_SETTINGS = (
+    "z_threshold",
+    "pct_threshold",
+    "perishable_z_threshold",
+    "perishable_pct_threshold",
+    "min_history",
+    "recent_days",
+)
+
+
+def default_settings() -> dict:
+    """A fresh copy of the default settings.
+
+    The copy is fresh all the way down: the market list inside it is a
+    new list, not the one in :data:`DEFAULT_SETTINGS`.  Copying the
+    dictionary on its own would leave the two sharing that list, and
+    adding a market would then change the default for everyone.
+    """
+    settings = dict(DEFAULT_SETTINGS)
+    settings["markets"] = list(DEFAULT_MARKETS)
+    return settings

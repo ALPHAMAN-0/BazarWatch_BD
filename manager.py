@@ -366,11 +366,17 @@ class BazarManager:
         self._require_admin()
         if not self._market_exists(name):
             raise RecordNotFoundError(f"No market called '{name}'.")
-        if any(r.market == name for r in self.records):
+        # The market is found without regard to case, so it has to be
+        # removed without regard to case too.  Otherwise the check passes
+        # and the removal quietly does nothing.
+        wanted = name.strip().lower()
+        if any(r.market.strip().lower() == wanted for r in self.records):
             raise ValidationError(
                 f"'{name}' still has price records, so it cannot be removed."
             )
-        self.settings["markets"] = [m for m in self.settings["markets"] if m != name]
+        self.settings["markets"] = [
+            m for m in self.settings["markets"] if m.strip().lower() != wanted
+        ]
         self.save_all()
 
     def markets(self) -> list[str]:

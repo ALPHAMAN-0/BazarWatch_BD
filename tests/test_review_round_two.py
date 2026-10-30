@@ -11,11 +11,12 @@ import unittest
 from pathlib import Path
 
 import config
+from analytics import alert_level
 from auth import hash_password
 from manager import BazarManager
-from models import Product
+from models import PerishableProduct, PriceRecord, Product
 from storage import Storage
-from validators import ValidationError
+from validators import RecordNotFoundError, ValidationError, validate_threshold
 
 
 class DataFolderTestCase(unittest.TestCase):
@@ -69,7 +70,7 @@ class DataFolderTestCase(unittest.TestCase):
         )
 
     def write_settings(self) -> None:
-        self.write("settings.json", json.dumps(dict(config.DEFAULT_SETTINGS)))
+        self.write("settings.json", json.dumps(config.default_settings()))
 
     def write_baskets(self) -> None:
         self.write("baskets.json", "[]")
@@ -152,19 +153,17 @@ class TestRemovingAMarketUsesTheSameComparisonAsTheCheck(DataFolderTestCase):
 
     def test_a_market_can_be_removed_with_a_different_case(self):
         manager = self.make_manager()
-        manager.add_market("Shwapno")
-        manager.remove_market("shwapno")
-        self.assertNotIn("Shwapno", manager.markets())
+        manager.add_market("New Market")
+        manager.remove_market("new market")
+        self.assertNotIn("New Market", manager.markets())
 
     def test_the_exact_name_still_works(self):
         manager = self.make_manager()
-        manager.add_market("Shwapno")
-        manager.remove_market("Shwapno")
-        self.assertNotIn("Shwapno", manager.markets())
+        manager.add_market("New Market")
+        manager.remove_market("New Market")
+        self.assertNotIn("New Market", manager.markets())
 
     def test_removing_a_market_that_is_not_there_is_refused(self):
-        from validators import RecordNotFoundError
-
         manager = self.make_manager()
         with self.assertRaises(RecordNotFoundError):
             manager.remove_market("Nowhere Market")
@@ -223,7 +222,7 @@ class TestANonNumericThresholdDoesNotCrashTheAlerts(DataFolderTestCase):
 
     def test_a_text_threshold_falls_back_for_a_perishable(self):
         settings = {"perishable_z_threshold": "abc"}
-        product = Product("ONION", "Onion", "", "kg", "V", perishable=True)
+        product = PerishableProduct("ONION", "Onion", "", "kg", "V")
         z_limit, pct_limit = product.spike_thresholds(settings)
         self.assertEqual(z_limit, config.DEFAULT_PERISHABLE_Z_THRESHOLD)
         self.assertEqual(pct_limit, config.DEFAULT_PERISHABLE_PCT_THRESHOLD)
@@ -245,9 +244,6 @@ class TestANonNumericThresholdDoesNotCrashTheAlerts(DataFolderTestCase):
         self.assertEqual(reloaded["z_threshold"], config.DEFAULT_Z_THRESHOLD)
 
     def test_the_alert_code_still_runs_with_a_text_threshold(self):
-        from analytics import alert_level
-        from models import PriceRecord
-
         product = Product("ONION", "Onion", "", "kg", "V", reference_price=50.0)
         record = PriceRecord("R1", "ONION", "Karwan Bazar", "2026-10-01", 50.0, "rafi")
         level, z, pct = alert_level(
@@ -267,26 +263,64 @@ class TestACountSettingKeepsItsWholeNumber(DataFolderTestCase):
     """
 
     def test_a_fractional_count_is_refused(self):
-        from validators import validate_threshold
-
         with self.assertRaises(ValidationError):
             validate_threshold("min_history", 2.4)
 
     def test_a_fractional_recent_days_is_refused(self):
-        from validators import validate_threshold
-
         with self.assertRaises(ValidationError):
             validate_threshold("recent_days", 5.9)
 
     def test_a_whole_count_is_kept(self):
-        from validators import validate_threshold
-
         self.assertEqual(validate_threshold("min_history", 5), 5)
 
     def test_a_whole_number_that_is_written_as_a_float_is_kept(self):
-        from validators import validate_threshold
-
         self.assertEqual(validate_threshold("min_history", 5.0), 5)
+
+
+class TestAddingAMarketDoesNotChangeTheDefault(DataFolderTestCase):
+    """The default settings are a template, not a shared box.
+
+    Copying the default settings and then adding a market must not change
+    the default for everybody: the next session has to start from the
+    three starter markets again.
+    """
+
+    def make_manager(self) -> BazarManager:
+        self.write_products("ONION")
+        self.write_users()
+        self.write_settings()
+        self.write_baskets()
+        self.write_records()
+        manager = BazarManager(self.data_dir)
+        manager.login("admin", "admin123")
+        return manager
+
+    def test_the_default_markets_are_unchanged_after_adding_one(self):
+        before = list(config.DEFAULT_MARKETS)
+        manager = self.make_manager()
+        manager.add_market("New Market")
+        self.assertEqual(list(config.DEFAULT_MARKETS), before)
+        self.assertNotIn("New Market", config.DEFAULT_MARKETS)
+
+    def test_a_second_session_starts_from_the_starter_markets(self):
+        manager = self.make_manager()
+        manager.add_market("New Market")
+
+        # A second session with its own data folder, so it starts from
+        # the defaults rather than from the file the first session wrote.
+        with tempfile.TemporaryDirectory() as other_dir:
+            other = BazarManager(Path(other_dir))
+            self.assertNotIn("New Market", other.markets())
+
+    def test_a_fresh_copy_has_its_own_market_list(self):
+        first = config.default_settings()
+        second = config.default_settings()
+        first["markets"].append("Only In The First")
+        self.assertNotIn("Only In The First", second["markets"])
+        self.assertNotIn("Only In The First", config.DEFAULT_SETTINGS["markets"])
+
+    def test_the_helper_gives_the_same_values_every_time(self):
+        self.assertEqual(config.default_settings(), config.default_settings())
 
 
 if __name__ == "__main__":

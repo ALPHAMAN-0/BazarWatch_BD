@@ -142,8 +142,11 @@ def validate_threshold(name: str, value) -> float:
     if not low <= number <= high:
         raise ValidationError(f"{name} must be between {low} and {high}")
     # These two count something, so they are whole numbers.  Keeping them
-    # as floats would write 5.0 into settings.json where 5 belongs.
+    # as floats would write 5.0 into settings.json where 5 belongs, and
+    # a fraction does not count anything at all, so it is refused.
     if name in config.COUNT_SETTINGS:
+        if number != int(number):
+            raise ValidationError(f"{name} must be a whole number")
         return int(number)
     return number
 

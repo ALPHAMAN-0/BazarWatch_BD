@@ -55,6 +55,10 @@ class Storage:
         # Warnings collected while loading; the GUI shows them at startup.
         self.warnings: list[str] = []
 
+        # Rows that were skipped on load because their product is not in
+        # the catalogue.  They are written back out on the next save.
+        self.skipped_rows: list[list[str]] = []
+
     # -- warnings -----------------------------------------------------------
     def clear_warnings(self) -> None:
         """Forget the warnings from the last load."""
@@ -67,6 +71,22 @@ class Storage:
         return "\n".join(self.warnings)
 
     # -- low-level helpers --------------------------------------------------
+    def _backup_name(self, path: Path) -> Path:
+        """A free name for a corrupt file that is being renamed.
+
+        The timestamp only has one-second resolution, so two corruptions
+        of the same file in the same second would get the same name and
+        the second would overwrite the first.  A counter is added when
+        the name is already taken.
+        """
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup = path.with_name(f"{path.name}.corrupt-{stamp}")
+        number = 2
+        while backup.exists():
+            backup = path.with_name(f"{path.name}.corrupt-{stamp}-{number}")
+            number += 1
+        return backup
+
     def _read_json(self, path: Path, default):
         """Read JSON, backing up a corrupt file and returning ``default``."""
         if not path.exists():
@@ -76,7 +96,7 @@ class Storage:
             with open(path, encoding="utf-8") as handle:
                 return json.load(handle)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            backup = path.with_name(f"{path.name}.corrupt-{datetime.now():%Y%m%d-%H%M%S}")
+            backup = self._backup_name(path)
             # If the file cannot be moved aside, carry on: the defaults
             # are still written below, and the warning tells the user
             # what happened.
@@ -189,9 +209,13 @@ class Storage:
 
     # -- settings -----------------------------------------------------------
     def load_settings(self) -> dict:
-        """Load the settings, filling in any missing key with its default."""
-        default = dict(config.DEFAULT_SETTINGS)
-        default["markets"] = list(config.DEFAULT_MARKETS)
+        """Load the settings, filling in any missing key with its default.
+
+        A value that is not the right shape is replaced by the default
+        and reported, so a hand-edited settings file cannot break the
+        alert code.
+        """
+        default = config.default_settings()
         data = self._read_json(self.settings_file, default)
         if not isinstance(data, dict):
             self.warnings.append(
@@ -202,6 +226,34 @@ class Storage:
         settings.update(data)
         if not isinstance(settings.get("markets"), list) or not settings["markets"]:
             settings["markets"] = list(config.DEFAULT_MARKETS)
+        settings = self._fix_bad_numbers(settings)
+        return settings
+
+    def _fix_bad_numbers(self, settings: dict) -> dict:
+        """Replace a setting that is not a number with its default.
+
+        The alert code reads these settings, so a value like ``"abc"``
+        would raise where a number is expected.  The bad value is
+        replaced and reported, and the user is told which one it was.
+
+        Only the numeric settings are checked.  The market list is not a
+        number, and putting the default list itself in would share it
+        with the defaults, so adding a market would then change the
+        default for everyone.
+        """
+        defaults = config.default_settings()
+        for key in config.NUMERIC_SETTINGS:
+            value = settings.get(key)
+            if value is None or isinstance(value, bool):
+                continue
+            try:
+                float(value)
+            except (TypeError, ValueError):
+                settings[key] = defaults[key]
+                self.warnings.append(
+                    f"{self.settings_file.name} had an unusable value for "
+                    f"'{key}' ({value!r}); the default was used instead."
+                )
         return settings
 
     def save_settings(self, settings: dict) -> None:
@@ -214,14 +266,22 @@ class Storage:
 
         ``known_product_ids`` is a set of product IDs that exist in the
         catalogue.  When given, a row naming an unknown product is skipped.
+
+        A skipped row is kept in :attr:`skipped_rows` and written back
+        out with the next save.  It is not shown to the user and it does
+        not take part in any calculation, but it is not thrown away
+        either: the product may come back, and until then the history is
+        not the app's to lose.
         """
         if not self.records_file.exists():
+            self.skipped_rows = []
             self.save_records([])
             return []
 
         records: list[PriceRecord] = []
         seen_ids: set[str] = set()
         problems: list[str] = []
+        skipped_rows: list[list[str]] = []
 
         with open(self.records_file, encoding="utf-8", newline="") as handle:
             rows = list(csv.reader(handle))
@@ -238,17 +298,32 @@ class Storage:
             reason = self._record_problem(row, seen_ids, known_product_ids)
             if reason is not None:
                 problems.append(f"line {offset}: {reason}")
+                if self._keep_skipped_row(row, reason):
+                    skipped_rows.append([cell.strip() for cell in row])
                 continue
             record = PriceRecord.from_row(row)
             seen_ids.add(record.record_id)
             records.append(record)
 
+        self.skipped_rows = skipped_rows
         if problems:
             self.warnings.append(
                 f"Skipped {len(problems)} row(s) in {self.records_file.name}: "
                 + "; ".join(problems)
             )
         return records
+
+    @staticmethod
+    def _keep_skipped_row(row, reason: str) -> bool:
+        """Whether a skipped row is worth keeping in the file.
+
+        A row naming a product that is not in the catalogue is kept: the
+        product may be added back, and the record is real history.  A
+        row that is malformed — a price that is not a number, a date in
+        the wrong format — is dropped, because there is nothing to keep
+        and no way to read it back.
+        """
+        return reason.startswith("unknown product ")
 
     @staticmethod
     def _record_problem(row, seen_ids: set[str], known_product_ids) -> str | None:
@@ -281,11 +356,18 @@ class Storage:
         return None
 
     def save_records(self, records: list[PriceRecord]) -> None:
-        """Save the price records, safely."""
+        """Save the price records, safely.
+
+        The rows that were skipped on load because their product is not
+        in the catalogue are written back out, so saving does not throw
+        away a record the app merely could not read.
+        """
         tmp_path = self.records_file.with_name(self.records_file.name + ".tmp")
         with open(tmp_path, "w", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle)
             writer.writerow(self.RECORD_HEADER)
             for record in records:
                 writer.writerow(record.to_row())
+            for row in self.skipped_rows:
+                writer.writerow(row)
         os.replace(str(tmp_path), str(self.records_file))
