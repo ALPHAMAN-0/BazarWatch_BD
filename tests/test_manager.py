@@ -385,6 +385,45 @@ class TestRecords(ManagerTestCase):
         self.manager.update_record(record.record_id, price=45.0)
         self.assertEqual(self.manager.get_record(record.record_id).price, 45.0)
 
+    def test_a_rejected_edit_leaves_the_record_untouched(self):
+        """A refused change must not change anything.
+
+        If the record were changed first and checked afterwards, the
+        record would keep the new values even though the edit was
+        refused, and the next save would write them to the file.
+        """
+        self.login_admin()
+        first = self.manager.add_record("ONION", "Karwan Bazar", "2026-10-05", 40)
+        second = self.manager.add_record("ONION", "Karwan Bazar", "2026-10-06", 45)
+
+        with self.assertRaises(DuplicateIDError):
+            self.manager.update_record(
+                second.record_id, date="2026-10-05", price=999.0
+            )
+
+        # The record is exactly as it was.
+        stored = self.manager.get_record(second.record_id)
+        self.assertEqual(stored.date, "2026-10-06")
+        self.assertEqual(stored.price, 45.0)
+        # And the other record is still there.
+        self.assertEqual(self.manager.get_record(first.record_id).price, 40.0)
+
+    def test_a_rejected_edit_is_not_written_to_the_file(self):
+        self.login_admin()
+        self.manager.add_record("ONION", "Karwan Bazar", "2026-10-05", 40)
+        second = self.manager.add_record("ONION", "Karwan Bazar", "2026-10-06", 45)
+        with self.assertRaises(DuplicateIDError):
+            self.manager.update_record(
+                second.record_id, date="2026-10-05", price=999.0
+            )
+        # Saving must not write the refused values out.
+        self.manager.save_all()
+        rows = (self.data_dir / "price_records.csv").read_text(encoding="utf-8")
+        self.assertNotIn("999", rows)
+        self.assertEqual(
+            self.manager.get_record(second.record_id).price, 45.0
+        )
+
     def test_member_cannot_delete(self):
         self.login_member()
         record = self.manager.add_record("ONION", "Karwan Bazar", self.yesterday(), 40)

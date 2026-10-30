@@ -32,6 +32,7 @@ if TK_AVAILABLE:
     # are replaced with harmless stubs that record what was shown.
     from gui import widgets
     from gui.app import BazarApp
+    from gui.records_tab import EditRecordDialog
     from manager import BazarManager
 
     _SHOWN = {"errors": [], "infos": [], "warnings": [], "confirm": True}
@@ -250,6 +251,39 @@ class TestRecordsTab(GuiTestCase):
         tab._update_buttons()
         self.assertEqual(str(tab.edit_button.cget("state")), "normal")
 
+    def test_clicking_a_row_enables_the_edit_button(self):
+        """The buttons must follow the user's own selection.
+
+        The user clicks a row, not a method call, so the tab has to
+        listen for the selection event.
+        """
+        tab = self.app._tabs["Records"]
+        tab.refresh()
+        row = tab.table.tree.get_children()[0]
+        tab.table.tree.selection_set(row)
+        tab.table.tree.event_generate("<<TreeviewSelect>>")
+        self.app.update_idletasks()
+        self.assertEqual(str(tab.edit_button.cget("state")), "normal")
+
+    def test_an_admin_can_delete_through_the_button(self):
+        self.app._logout()
+        self._login("admin", "admin123")
+        tab = self.app._tabs["Records"]
+        tab.refresh()
+        row = tab.table.tree.get_children()[0]
+        tab.table.tree.selection_set(row)
+        tab.table.tree.event_generate("<<TreeviewSelect>>")
+        self.app.update_idletasks()
+        self.assertEqual(str(tab.delete_button.cget("state")), "normal")
+
+    def test_the_selection_survives_a_refresh(self):
+        tab = self.app._tabs["Records"]
+        tab.refresh()
+        row = tab.table.tree.get_children()[0]
+        tab.table.tree.selection_set(row)
+        tab.refresh()
+        self.assertEqual(tab.table.selected_id(), row)
+
     def test_search_filters_the_table(self):
         tab = self.app._tabs["Records"]
         tab.search_var.set("onion")
@@ -338,8 +372,6 @@ class TestRecordsTabActions(GuiTestCase):
         record_id = self._select_the_record()
         self.tab._edit_selected(record_id)
         # The dialog is modal, so it is driven directly.
-        from gui.records_tab import EditRecordDialog
-
         dialog = EditRecordDialog(
             self.app, self.manager, self.manager.get_record(record_id),
             self.tab.refresh,
@@ -350,8 +382,6 @@ class TestRecordsTabActions(GuiTestCase):
 
     def test_the_edit_dialog_keeps_a_bad_price_on_screen(self):
         record_id = self._select_the_record()
-        from gui.records_tab import EditRecordDialog
-
         dialog = EditRecordDialog(
             self.app, self.manager, self.manager.get_record(record_id),
             self.tab.refresh,
@@ -369,7 +399,7 @@ class TestRecordsTabActions(GuiTestCase):
         self.assertTrue(_SHOWN["infos"])
 
     def test_a_member_cannot_delete_a_record(self):
-        record_id = self._select_the_record()
+        self._select_the_record()
         self.tab._delete_selected()
         self.assertTrue(_SHOWN["infos"])
         self.assertEqual(len(self.manager.records), 1)
@@ -403,6 +433,16 @@ class TestLogPriceTabDetails(GuiTestCase):
         super().setUp()
         self._login("rafi", "rafi123")
         self.tab = self.app._tabs["Log Price"]
+
+    def test_logging_in_does_not_show_an_error(self):
+        """Every tab must be able to reload itself without an exception."""
+        _SHOWN["errors"].clear()
+        self.app.refresh_all()
+        self.assertEqual(_SHOWN["errors"], [])
+
+    def test_the_log_price_tab_can_reload_itself(self):
+        self.tab.refresh()
+        self.assertTrue(self.tab.product_box["values"])
 
     def test_the_product_details_are_shown(self):
         self.tab.product_var.set(self.tab.product_box["values"][0])
