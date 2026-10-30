@@ -11,10 +11,82 @@ from __future__ import annotations
 
 import sys
 import tempfile
+from collections.abc import Callable
 from datetime import date, timedelta
 from pathlib import Path
+from tkinter import ttk
+from typing import cast
+
+import numpy as np
+
+import config
+from analytics import (
+    alert_level,
+    basket_plan,
+    budget_status,
+    cheapest_market,
+    product_statistics,
+)
+from generate_sample_data import generate
+from gui.admin_tab import AdminTab
+from gui.basket_tab import BasketTab
+from gui.dashboard_tab import DashboardTab
+from gui.log_price_tab import LogPriceTab
+from gui.login_view import LoginView
+from gui.records_tab import RecordsTab
+from manager import BazarManager
+from models import PerishableProduct, PriceRecord, Product
+from storage import Storage
+from validators import (
+    AuthError,
+    BazarError,
+    DuplicateIDError,
+    PermissionDeniedError,
+    RecordNotFoundError,
+    ValidationError,
+)
 
 RESULTS: list[tuple[bool, str, str]] = []
+
+# The numbers the plan quotes, named so the checks below read as prose
+# instead of a wall of literals.
+PLAN_PRODUCT_COUNT = 12
+TABLE_COLUMNS = 6
+STARTER_MARKETS = [
+    "Karwan Bazar", "Mohammadpur Krishi Market", "Shwapno",
+]
+SAMPLE_RECORD_MIN = 250
+SAMPLE_RECORD_MAX = 300
+SAMPLE_USER_FILE_MIN_BYTES = 10
+REFERENCE_PRICE = 50.0
+HIGH_REFERENCE_PRICE = 200.0
+PCT_ABOVE_REFERENCE = 20.0
+PCT_OVER_LIMIT = 15.0
+Z_LIMIT = 2.0
+PERISHABLE_Z_LIMIT = 2.5
+PERISHABLE_PCT_LIMIT = 25.0
+STANDARD_Z_LIMIT = 2.0
+STANDARD_PCT_LIMIT = 15.0
+BUDGET = 100.0
+WITHIN_BUDGET = 90.0
+CLOSE_TO_BUDGET = 95.0
+OVER_BUDGET = 120.0
+TOLERANCE = 1e-9
+ONION_UNIT_PRICE = 40.0
+EGG_UNIT_PRICE = 120.0
+HISTORY_LENGTH = 6
+SHORT_HISTORY_LENGTH = 3
+CHEAPEST_AVERAGE = 40.0
+RECENT_DAYS = 14
+STAT_MEAN = 20.0
+STAT_MEDIAN = 20.0
+STAT_MIN = 10.0
+STAT_MAX = 30.0
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 400
+TABLE_WIDTH = 800
+MIN_TABLE_ROWS = 100
+MIN_TABLE_HEIGHT = 200
 
 
 def check(name: str, condition, detail: str = "") -> None:
@@ -28,11 +100,17 @@ def section(title: str) -> None:
     print("-" * len(title))
 
 
+def replace(module, name: str, value) -> None:
+    """Set an attribute on a module, whatever the module has or has not.
+
+    The GUI modules do not all import the same helpers, so the attribute
+    is set through this helper rather than by direct assignment.
+    """
+    vars(module)[name] = value
+
+
 # --- Section 4 and 12: the starter data and the sample generator ------------
 section("4/12  Starter data and the sample generator")
-
-import config
-from generate_sample_data import generate
 
 check(
     "the three starter markets are the ones in the plan",
@@ -48,7 +126,7 @@ for line in Path("plan.md").read_text(encoding="utf-8").splitlines():
     if not line.startswith("|") or line.startswith("|---"):
         continue
     cells = [c.strip() for c in line.strip("|").split("|")]
-    if len(cells) != 6 or cells[0] in {"ID", ""}:
+    if len(cells) != TABLE_COLUMNS or cells[0] in {"ID", ""}:
         continue
     if not cells[0].replace("_", "").isalpha() or cells[0] != cells[0].upper():
         continue
@@ -57,7 +135,7 @@ for line in Path("plan.md").read_text(encoding="utf-8").splitlines():
     )
 check(
     "the plan's starter table was read",
-    len(plan_products) == 12,
+    len(plan_products) == PLAN_PRODUCT_COUNT,
     f"{len(plan_products)} products read from plan.md",
 )
 actual = {
@@ -92,14 +170,17 @@ check(
 with tempfile.TemporaryDirectory() as tmp:
     data_dir = Path(tmp)
     generate(data_dir, end_date=date.today(), force=True)
-    records = (data_dir / "price_records.csv").read_text(encoding="utf-8").splitlines()
+    record_lines = (data_dir / "price_records.csv").read_text(encoding="utf-8").splitlines()
     users = (data_dir / "users.json").read_text(encoding="utf-8")
     check(
         "the generator writes between 250 and 300 records",
-        250 <= len(records) - 1 <= 300,
-        f"{len(records) - 1} records",
+        SAMPLE_RECORD_MIN <= len(record_lines) - 1 <= SAMPLE_RECORD_MAX,
+        f"{len(record_lines) - 1} records",
     )
-    check("the generator writes the users file", len(users) > 10)
+    check(
+        "the generator writes the users file",
+        len(users) > SAMPLE_USER_FILE_MIN_BYTES,
+    )
     check(
         "the generator creates the data files",
         all(
@@ -122,18 +203,9 @@ with tempfile.TemporaryDirectory() as tmp:
 # --- Section 5: the rules ---------------------------------------------------
 section("5  The alert, cheapest-market and basket rules")
 
-import numpy as np
-
-from analytics import (
-    alert_level,
-    basket_plan,
-    budget_status,
-    cheapest_market,
-    product_statistics,
+onion = Product(
+    "ONION", "Onion", "পেঁয়াজ", "kg", "Vegetables", reference_price=REFERENCE_PRICE
 )
-from models import PerishableProduct, PriceRecord, Product
-
-onion = Product("ONION", "Onion", "পেঁয়াজ", "kg", "Vegetables", reference_price=50.0)
 potato = Product("POTATO", "Potato", "আলু", "kg", "Vegetables", reference_price=40.0)
 settings = dict(config.DEFAULT_SETTINGS)
 
@@ -148,12 +220,15 @@ flat = [
     for i in range(1, 7)
 ]
 spike = PriceRecord("R9", "ONION", "Karwan Bazar", "2026-10-08", 90.0, "rafi")
-level, z, pct = alert_level(spike, flat + [spike], {"ONION": onion}, settings)
+level, z, pct = alert_level(spike, [*flat, spike], {"ONION": onion}, settings)
 check("a big jump on both rules is a Spike", level == "Spike", f"{level} z={z} pct={pct}")
 
 # Only the z rule fires: the reference price is high enough not to fire.
-onion_high = Product("ONION", "Onion", "পেঁয়াজ", "kg", "Vegetables", reference_price=200.0)
-level, z, pct = alert_level(spike, flat + [spike], {"ONION": onion_high}, settings)
+onion_high = Product(
+    "ONION", "Onion", "পেঁয়াজ", "kg", "Vegetables",
+    reference_price=HIGH_REFERENCE_PRICE,
+)
+level, z, pct = alert_level(spike, [*flat, spike], {"ONION": onion_high}, settings)
 check("only the z rule firing is a Watch", level == "Watch", f"{level} z={z} pct={pct}")
 
 # Only the percentage rule fires: the history is wide enough that the
@@ -167,25 +242,31 @@ wide = [
     for i in range(1, 7)
 ]
 mid = PriceRecord("R9", "ONION", "Karwan Bazar", "2026-10-08", 60.0, "rafi")
-level, z, pct = alert_level(mid, wide + [mid], {"ONION": onion}, settings)
+level, z, pct = alert_level(mid, [*wide, mid], {"ONION": onion}, settings)
 check(
     "only the percentage rule firing is a Watch",
-    level == "Watch" and pct is not None and pct >= 15.0 and z < 2.0,
+    level == "Watch" and pct is not None
+    and pct >= PCT_OVER_LIMIT and z < Z_LIMIT,
     f"{level} z={z} pct={pct}",
 )
 
 # Neither rule fires.
 quiet = PriceRecord("R9", "ONION", "Karwan Bazar", "2026-10-08", 50.0, "rafi")
-level, z, pct = alert_level(quiet, flat + [quiet], {"ONION": onion}, settings)
+level, z, pct = alert_level(quiet, [*flat, quiet], {"ONION": onion}, settings)
 check("neither rule firing is Normal", level == "Normal", f"{level} z={z} pct={pct}")
 
 # A history with no spread at all gives no z-score.
 level, z, pct = alert_level(
     spike,
     [
-        PriceRecord(f"R{i}", "ONION", "Karwan Bazar", f"2026-09-{20 + i:02d}", 50.0, "rafi")
-        for i in range(1, 7)
-    ] + [spike],
+        *[
+            PriceRecord(
+                f"R{i}", "ONION", "Karwan Bazar", f"2026-09-{20 + i:02d}", 50.0, "rafi"
+            )
+            for i in range(1, 7)
+        ],
+        spike,
+    ],
     {"ONION": onion},
     settings,
 )
@@ -193,7 +274,7 @@ check("a history with no spread gives no z-score", z is None, f"z={z}")
 
 # No reference price: the most a record can reach is Watch.
 no_ref = Product("ONION", "Onion", "পেঁয়াজ", "kg", "Vegetables", reference_price=None)
-level, z, pct = alert_level(spike, flat + [spike], {"ONION": no_ref}, settings)
+level, z, pct = alert_level(spike, [*flat, spike], {"ONION": no_ref}, settings)
 check(
     "no reference price means at most Watch",
     level == "Watch" and pct is None,
@@ -202,7 +283,7 @@ check(
 
 # Too little history: no z.
 short = flat[:3]
-level, z, pct = alert_level(spike, short + [spike], {"ONION": onion}, settings)
+level, z, pct = alert_level(spike, [*short, spike], {"ONION": onion}, settings)
 check("too little history means no z", z is None, f"z={z}")
 
 # Perishables use the looser limits.
@@ -210,13 +291,13 @@ perishable = PerishableProduct("ONION", "Onion", "পেঁয়াজ", "kg", 
 z_limit, pct_limit = perishable.spike_thresholds(settings)
 check(
     "perishables use the looser limits",
-    (z_limit, pct_limit) == (2.5, 25.0),
+    (z_limit, pct_limit) == (PERISHABLE_Z_LIMIT, PERISHABLE_PCT_LIMIT),
     f"{z_limit}, {pct_limit}",
 )
 z_limit, pct_limit = onion.spike_thresholds(settings)
 check(
     "normal products use the standard limits",
-    (z_limit, pct_limit) == (2.0, 15.0),
+    (z_limit, pct_limit) == (STANDARD_Z_LIMIT, STANDARD_PCT_LIMIT),
     f"{z_limit}, {pct_limit}",
 )
 
@@ -230,13 +311,13 @@ check("the history only looks backwards", z is None, f"z={z}")
 today = date.today()
 old = (today - timedelta(days=40)).isoformat()
 recent = (today - timedelta(days=2)).isoformat()
-records = [
+sample_records = [
     PriceRecord("R1", "ONION", "Karwan Bazar", old, 10.0, "rafi"),
     PriceRecord("R2", "ONION", "Shwapno", recent, 60.0, "rafi"),
     PriceRecord("R3", "ONION", "Karwan Bazar", recent, 80.0, "rafi"),
 ]
 market, average = cheapest_market(
-    "ONION", records, ["Karwan Bazar", "Shwapno"], 14, today=today
+    "ONION", sample_records, ["Karwan Bazar", "Shwapno"], 14, today=today
 )
 check(
     "the cheapest market ignores the records older than the window",
@@ -269,12 +350,12 @@ check(
 )
 check(
     "the basket total uses the dot product",
-    abs(plan["best_total"] - (2 * 40.0 + 1 * 120.0)) < 1e-9,
+    abs(plan["best_total"] - (2 * ONION_UNIT_PRICE + EGG_UNIT_PRICE)) < TOLERANCE,
     str(plan["best_total"]),
 )
 check(
     "the split plan puts each item at its own cheapest market",
-    plan["split_total"] == 2 * 40.0 + 1 * 120.0,
+    plan["split_total"] == 2 * ONION_UNIT_PRICE + EGG_UNIT_PRICE,
     str(plan["split_total"]),
 )
 
@@ -292,11 +373,11 @@ check(
     str(plan["best_market"]),
 )
 
-status, detail = budget_status(90.0, 100.0)
+status, detail = budget_status(WITHIN_BUDGET, BUDGET)
 check("90% of the budget is within budget", status == "Within budget", f"{status} {detail}")
-status, detail = budget_status(95.0, 100.0)
+status, detail = budget_status(CLOSE_TO_BUDGET, BUDGET)
 check("95% of the budget is close to budget", status == "Close to budget", f"{status} {detail}")
-status, detail = budget_status(120.0, 100.0)
+status, detail = budget_status(OVER_BUDGET, BUDGET)
 check("over 100% is over budget", status == "Over budget", f"{status} {detail}")
 
 stats = product_statistics(
@@ -307,23 +388,14 @@ stats = product_statistics(
 )
 check(
     "the statistics give the mean, median, min, max and std",
-    stats["mean"] == 20.0 and stats["median"] == 20.0
-    and stats["min"] == 10.0 and stats["max"] == 30.0
-    and abs(stats["std"] - np.std([10.0, 30.0], ddof=1)) < 1e-9,
+    stats["mean"] == STAT_MEAN and stats["median"] == STAT_MEDIAN
+    and stats["min"] == STAT_MIN and stats["max"] == STAT_MAX
+    and abs(stats["std"] - np.std([STAT_MIN, STAT_MAX], ddof=1)) < TOLERANCE,
     str(stats),
 )
 
 # --- Section 9: validation and permissions ---------------------------------
 section("9  Validation and permissions")
-
-from validators import (
-    AuthError,
-    BazarError,
-    DuplicateIDError,
-    PermissionDeniedError,
-    RecordNotFoundError,
-    ValidationError,
-)
 
 for name, exc in (
     ("ValidationError", ValidationError),
@@ -333,8 +405,6 @@ for name, exc in (
     ("PermissionDeniedError", PermissionDeniedError),
 ):
     check(f"{name} is a BazarError", issubclass(exc, BazarError))
-
-from manager import BazarManager
 
 with tempfile.TemporaryDirectory() as tmp:
     manager = BazarManager(Path(tmp))
@@ -368,13 +438,14 @@ with tempfile.TemporaryDirectory() as tmp:
     check("a Member cannot delete a record", member_delete)
 
     # A member may not manage the catalogue.
-    for action, call in (
+    manage_calls: list[tuple[str, Callable[[], object]]] = [
         ("add a product", lambda: manager.add_product("X", "X", "X", "kg", "Grocery")),
         ("add a market", lambda: manager.add_market("New Market")),
         ("change the settings", lambda: manager.update_settings({"z_threshold": 3})),
-    ):
+    ]
+    for action, manage_call in manage_calls:
         try:
-            call()
+            manage_call()
             refused = False
         except PermissionDeniedError:
             refused = True
@@ -417,27 +488,28 @@ with tempfile.TemporaryDirectory() as tmp:
 
     try:
         validate_date((date.today() + timedelta(days=1)).isoformat())
-        future = False
+        future_refused = False
     except ValidationError:
-        future = True
-    check("a future date is refused", future)
+        future_refused = True
+    check("a future date is refused", future_refused)
 
     for value in (0, -2):
         try:
             validate_quantity(value)
-            bad = False
+            quantity_refused = False
         except ValidationError:
-            bad = True
-        check(f"the quantity {value!r} is refused", bad)
+            quantity_refused = True
+        check(f"the quantity {value!r} is refused", quantity_refused)
 
     # Duplicate identifiers.
-    for label, call in (
+    duplicate_calls: list[tuple[str, Callable[[], object]]] = [
         ("the username", lambda: manager.add_member("rafi", "rafi123")),
         ("the product ID", lambda: manager.add_product("X", "Y", "Y", "kg", "Grocery")),
         ("the market name", lambda: manager.add_market("new market")),
-    ):
+    ]
+    for label, duplicate_call in duplicate_calls:
         try:
-            call()
+            duplicate_call()
             bad = False
         except DuplicateIDError:
             bad = True
@@ -510,8 +582,6 @@ with tempfile.TemporaryDirectory() as tmp:
 # --- Section 8: the file rules ---------------------------------------------
 section("8  The file rules")
 
-from storage import Storage
-
 with tempfile.TemporaryDirectory() as tmp:
     data_dir = Path(tmp)
     storage = Storage(data_dir)
@@ -530,7 +600,10 @@ with tempfile.TemporaryDirectory() as tmp:
     settings = storage.load_settings()
     corrupt = list(data_dir.glob("settings.json.corrupt-*"))
     check("corrupt JSON is renamed", len(corrupt) == 1, str(corrupt))
-    check("the defaults are loaded instead", settings["z_threshold"] == 2.0)
+    check(
+        "the defaults are loaded instead",
+        settings["z_threshold"] == STANDARD_Z_LIMIT,
+    )
     check("the problem is reported", len(storage.warnings) > 0)
 
     # A bad CSV row is skipped and reported.
@@ -578,40 +651,65 @@ except Exception:
 if not TK_AVAILABLE:
     check("the GUI could be started", False, "no display available")
 else:
+    from tkinter import simpledialog
+
+    import gui.admin_tab
+    import gui.app
+    import gui.basket_tab
+    import gui.log_price_tab
+    import gui.login_view
+    import gui.records_tab
+    import gui.stats_tab
     from gui import widgets
     from gui.app import BazarApp
-    from manager import BazarManager as Manager
 
     shown: dict[str, list] = {"errors": [], "infos": [], "warnings": []}
-    widgets.show_error = lambda p, m, title="Error": shown["errors"].append(m)
-    widgets.show_info = lambda p, m, title="BazarWatch BD": shown["infos"].append(m)
-    widgets.show_warning = lambda p, m, title="Warning": shown["warnings"].append(m)
-    widgets.confirm = lambda p, q, title="Please confirm": True
-    import gui.admin_tab, gui.app, gui.basket_tab, gui.log_price_tab
-    import gui.login_view, gui.records_tab, gui.stats_tab
-    from tkinter import simpledialog
+    def fake_show_error(parent, message, title="Error"):
+        shown["errors"].append(message)
+
+    def fake_show_info(parent, message, title="BazarWatch BD"):
+        shown["infos"].append(message)
+
+    def fake_show_warning(parent, message, title="Warning"):
+        shown["warnings"].append(message)
+
+    def fake_confirm(parent, question, title="Please confirm"):
+        return True
+
+    widgets.show_error = fake_show_error
+    widgets.show_info = fake_show_info
+    widgets.show_warning = fake_show_warning
+    widgets.confirm = fake_confirm
 
     simpledialog.askstring = lambda *a, **k: None
     for module in (
-        gui.admin_tab, gui.app, gui.basket_tab, gui.login_view,
-        gui.log_price_tab, gui.records_tab, gui.stats_tab,
+        gui.admin_tab,
+        gui.app,
+        gui.basket_tab,
+        gui.login_view,
+        gui.log_price_tab,
+        gui.records_tab,
+        gui.stats_tab,
     ):
         for name, key in (
             ("show_error", "errors"), ("show_info", "infos"),
             ("show_warning", "warnings"),
         ):
             if hasattr(module, name):
-                setattr(
-                    module, name,
-                    lambda p, m, title="x", _k=key: shown[_k].append(m),
-                )
+                def capture(parent, message, title="x", _k=key):
+                    shown[_k].append(message)
+
+                setattr(module, name, capture)
         if hasattr(module, "confirm"):
-            module.confirm = lambda p, q, title="x": True
+            def always_confirm(parent, question, title="x"):
+                return True
+
+            replace(module, "confirm", always_confirm)
 
     with tempfile.TemporaryDirectory() as tmp:
         data_dir = Path(tmp)
         generate(data_dir, end_date=date.today(), force=True)
-        manager = Manager(data_dir)
+        manager = BazarManager(data_dir)
         app = BazarApp(manager=manager)
         app.update_idletasks()
 
@@ -619,7 +717,7 @@ else:
         check("the login screen comes first", bool(app._body.winfo_children()))
 
         # Log in as the Admin.
-        view = app._body.winfo_children()[0]
+        view = cast(LoginView, app._body.winfo_children()[0])
         view.title_var.set("admin")
         view.password_var.set("admin123")
         view._do_login()
@@ -634,41 +732,43 @@ else:
         )
         check(
             "the header names the logged-in user",
-            "admin" in app._header.winfo_children()[1].cget("text"),
-            app._header.winfo_children()[1].cget("text"),
+            "admin" in cast(ttk.Frame, app._header).winfo_children()[1].cget("text"),
+            cast(ttk.Frame, app._header).winfo_children()[1].cget("text"),
         )
 
         # The Records table has real rows and is tall enough to use.
         # The tab has to be the visible page before Tk lays it out.
-        records_tab = app._tabs["Records"]
-        app._notebook.select(records_tab)
+        records_tab = cast(RecordsTab, app._tabs["Records"])
+        notebook = cast(ttk.Notebook, app._notebook)
+        notebook.select(records_tab)
         for _ in range(4):
             app.update_idletasks()
             app.update()
         records_tab.refresh()
         app.update_idletasks()
         rows = len(records_tab.table.tree.get_children())
-        check("the Records table is filled", rows > 100, f"{rows} rows")
+        check("the Records table is filled", rows > MIN_TABLE_ROWS, f"{rows} rows")
         check(
             "the Records table is tall enough to use",
-            records_tab.table.tree.winfo_height() > 200,
+            records_tab.table.tree.winfo_height() > MIN_TABLE_HEIGHT,
             f"{records_tab.table.tree.winfo_height()} px",
         )
 
         # Every tab gets a real share of the window.
         for name, tab in app._tabs.items():
-            app._notebook.select(tab)
+            notebook.select(tab)
             for _ in range(4):
                 app.update_idletasks()
                 app.update()
             check(
                 f"the {name} tab fills the window",
-                tab.winfo_width() > 800 and tab.winfo_height() > 400,
+                tab.winfo_width() > WINDOW_WIDTH
+                and tab.winfo_height() > WINDOW_HEIGHT,
                 f"{tab.winfo_width()}x{tab.winfo_height()}",
             )
 
         # The Dashboard has its numbers.
-        dashboard = app._tabs["Dashboard"]
+        dashboard = cast(DashboardTab, app._tabs["Dashboard"])
         dashboard.refresh()
         app.update_idletasks()
         totals = {k: v.get() for k, v in dashboard.summary_vars.items()}
@@ -684,8 +784,8 @@ else:
         )
 
         # The Log Price tab saves a price and shows the level.
-        log_price = app._tabs["Log Price"]
-        app._notebook.select(log_price)
+        log_price = cast(LogPriceTab, app._tabs["Log Price"])
+        notebook.select(log_price)
         for _ in range(4):
             app.update_idletasks()
             app.update()
@@ -700,8 +800,8 @@ else:
         )
 
         # The basket works.
-        basket = app._tabs["My Basket"]
-        app._notebook.select(basket)
+        basket = cast(BasketTab, app._tabs["My Basket"])
+        notebook.select(basket)
         for _ in range(4):
             app.update_idletasks()
             app.update()
@@ -759,7 +859,7 @@ else:
                 config_module.REPORTS_DIR = original
 
         # The Admin sub-tabs.
-        admin = app._tabs["Admin"]
+        admin = cast(AdminTab, app._tabs["Admin"])
         for name, sub in (
             ("Users", admin.users_tab),
             ("Products", admin.products_tab),
@@ -773,7 +873,7 @@ else:
         # Log out and back in as a Member: no Admin tab.
         app._logout()
         app.update_idletasks()
-        view = app._body.winfo_children()[0]
+        view = cast(LoginView, app._body.winfo_children()[0])
         view.title_var.set("rafi")
         view.password_var.set("rafi123")
         view._do_login()
@@ -785,8 +885,9 @@ else:
         )
 
         # The Delete button is disabled for a Member.
-        records_tab = app._tabs["Records"]
-        app._notebook.select(records_tab)
+        records_tab = cast(RecordsTab, app._tabs["Records"])
+        notebook = cast(ttk.Notebook, app._notebook)
+        notebook.select(records_tab)
         for _ in range(4):
             app.update_idletasks()
             app.update()
