@@ -208,11 +208,17 @@ class AlertTable(ttk.Frame):
         )
 
     def selected_id(self) -> str | None:
-        """The first column of the selected row, or None."""
+        """The ID of the selected row, or None.
+
+        The ID is the one the row was added with, which is the record ID,
+        the username or the product ID.  It is not the first column of
+        the row: a table that shows a name there would hand back the
+        name, and the name is not always what the data is keyed on.
+        """
         selection = self.tree.selection()
         if not selection:
             return None
-        return self.tree.item(selection[0], "values")[0]
+        return selection[0]
 
     def double_click_handler(self, callback):
         """Call ``callback`` when a row is double-clicked."""

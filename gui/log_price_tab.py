@@ -120,8 +120,13 @@ class LogPriceTab(Tab):
 
         markets = self.manager.markets()
         self.market_box["values"] = markets
-        if markets and not self.market_var.get():
+        # The chosen market has to be one that still exists.  When the
+        # Admin removes the market that was chosen, the field would
+        # otherwise keep a market that is no longer there.
+        if markets and self.market_var.get() not in markets:
             self.market_var.set(markets[0])
+        elif not markets:
+            self.market_var.set("")
 
     def _product_id_for(self, label: str) -> str | None:
         """The product ID a dropdown label stands for."""

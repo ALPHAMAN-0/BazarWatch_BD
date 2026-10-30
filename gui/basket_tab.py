@@ -28,8 +28,18 @@ class BasketTab(Tab):
         # The dropdown labels and the product IDs they stand for.
         self._product_options: list[tuple[str, str]] = []
 
+        # Set while the user is typing in the budget field.  A rebuild
+        # of the table must not throw away a budget that has not been
+        # saved yet, so the field is left alone until it is saved.
+        self._budget_edited = False
+        self.budget_var.trace_add("write", self._budget_changed)
+
         self._build()
         self.refresh()
+
+    def _budget_changed(self, *_args) -> None:
+        """Note that the user has typed in the budget field."""
+        self._budget_edited = True
 
     def _build(self) -> None:
         """Lay the tab out."""
@@ -178,7 +188,14 @@ class BasketTab(Tab):
         ]
 
         basket = manager.get_basket(username)
-        self.budget_var.set(f"{basket.get('budget', 0.0):g}")
+        # The budget field is left alone while the user has unsaved
+        # changes in it, so adding or removing an item does not throw
+        # away what they typed.
+        if not self._budget_edited:
+            # Filling the field in is not the user editing it, so the
+            # flag is put back the way it was.
+            self.budget_var.set(f"{basket.get('budget', 0.0):g}")
+            self._budget_edited = False
 
         recent_days = int(manager.settings.get("recent_days", 14))
         markets = manager.markets()
@@ -320,6 +337,9 @@ class BasketTab(Tab):
         except Exception as exc:
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
+        # The budget is saved now, so the field is back in step with the
+        # basket and a later rebuild may fill it in again.
+        self._budget_edited = False
         self.refresh()
 
     def _clear_basket(self) -> None:

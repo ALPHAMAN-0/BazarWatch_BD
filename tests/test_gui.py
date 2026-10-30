@@ -1025,7 +1025,8 @@ class TestRemovingAMarketClearsTheStaleChoice(GuiTestCase):
 
     def setUp(self):
         super().setUp()
-        self._login("rafi", "rafi123")
+        # Only an Admin may remove a market.
+        self._login("admin", "admin123")
         self.tab = self.app._tabs["Log Price"]
 
     def test_a_removed_market_is_not_offered_after_a_refresh(self):
