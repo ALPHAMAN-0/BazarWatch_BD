@@ -141,6 +141,10 @@ def validate_threshold(name: str, value) -> float:
     low, high = ranges[name]
     if not low <= number <= high:
         raise ValidationError(f"{name} must be between {low} and {high}")
+    # These two count something, so they are whole numbers.  Keeping them
+    # as floats would write 5.0 into settings.json where 5 belongs.
+    if name in config.COUNT_SETTINGS:
+        return int(number)
     return number
 
 

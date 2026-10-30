@@ -595,6 +595,7 @@ class SettingsSubTab(AdminSubTab):
             return
         self.status_var.set("The default settings were restored.")
         self.refresh()
+        self._changed()
 
 
 class AdminTab(Tab):

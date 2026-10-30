@@ -861,6 +861,46 @@ class TestAdminSelectionSurvivesARefresh(GuiTestCase):
         self.assertEqual(markets.table.selected_id(), "Karwan Bazar")
 
 
+class TestSettingsChangesReachTheOtherTabs(GuiTestCase):
+    """A setting the Admin changes must show up on the other tabs."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("admin", "admin123")
+        self.tab = self.app._tabs["Admin"]
+
+    def test_turning_off_the_bangla_names_reaches_the_log_price_tab(self):
+        settings = self.tab.settings_tab
+        settings.vars["show_bangla_names"].set(False)
+        settings._save()
+        log_price = self.app._tabs["Log Price"]
+        labels = list(log_price.product_box["values"])
+        # With the Bangla names off a label is "Onion (local) [ONION]".
+        self.assertTrue(
+            all("দেশি" not in label for label in labels),
+            f"The Bangla names are still showing: {labels}",
+        )
+
+    def test_the_bangla_names_come_back_when_the_setting_is_reset(self):
+        settings = self.tab.settings_tab
+        settings.vars["show_bangla_names"].set(False)
+        settings._save()
+        settings._reset()
+        log_price = self.app._tabs["Log Price"]
+        labels = list(log_price.product_box["values"])
+        self.assertTrue(
+            any("দেশি" in label for label in labels),
+            f"The Bangla names did not come back: {labels}",
+        )
+
+    def test_a_new_market_reaches_the_log_price_dropdown(self):
+        markets = self.tab.markets_tab
+        markets.market_var.set("Bashundhara")
+        markets._add_market()
+        log_price = self.app._tabs["Log Price"]
+        self.assertIn("Bashundhara", list(log_price.market_box["values"]))
+
+
 class TestMenuActions(GuiTestCase):
     def test_reload_data_keeps_the_app_running(self):
         self._login()

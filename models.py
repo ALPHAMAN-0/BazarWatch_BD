@@ -14,6 +14,20 @@ model layer is unit-testable without a display.
 
 from __future__ import annotations
 
+import config
+
+
+def _setting(settings: dict, key: str, default):
+    """One setting, or its default when the setting is missing or empty.
+
+    A hand-edited settings file must not be able to crash the alert
+    code, so a missing or null value falls back to the default.
+    """
+    value = settings.get(key)
+    if value is None:
+        return default
+    return value
+
 
 class Product:
     """An item in the catalogue, e.g. onion."""
@@ -59,10 +73,15 @@ class Product:
 
         Normal products use the standard limits; :class:`PerishableProduct`
         overrides this method with the looser perishable limits.
+
+        A setting that is missing falls back to its default, so a
+        hand-edited settings file cannot crash the alert code.
         """
         return (
-            float(settings["z_threshold"]),
-            float(settings["pct_threshold"]),
+            float(_setting(settings, "z_threshold", config.DEFAULT_Z_THRESHOLD)),
+            float(
+                _setting(settings, "pct_threshold", config.DEFAULT_PCT_THRESHOLD)
+            ),
         )
 
     # -- serialisation ------------------------------------------------------
@@ -128,8 +147,20 @@ class PerishableProduct(Product):
 
     def spike_thresholds(self, settings: dict) -> tuple[float, float]:
         return (
-            float(settings["perishable_z_threshold"]),
-            float(settings["perishable_pct_threshold"]),
+            float(
+                _setting(
+                    settings,
+                    "perishable_z_threshold",
+                    config.DEFAULT_PERISHABLE_Z_THRESHOLD,
+                )
+            ),
+            float(
+                _setting(
+                    settings,
+                    "perishable_pct_threshold",
+                    config.DEFAULT_PERISHABLE_PCT_THRESHOLD,
+                )
+            ),
         )
 
     def is_perishable(self) -> bool:

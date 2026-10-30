@@ -109,5 +109,79 @@ class TestDateFiltersAreValidated(unittest.TestCase):
         self.assertEqual(len(results), 1)
 
 
+class TestSettingsKeepTheirType(unittest.TestCase):
+    """The settings that count something are stored as whole numbers."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.data_dir = Path(self._tmp.name)
+        self.manager = BazarManager(self.data_dir)
+        self.manager.create_admin("admin", "admin123")
+        self.manager.login("admin", "admin123")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_min_history_is_a_whole_number(self):
+        self.manager.update_settings({"min_history": 6})
+        self.assertIsInstance(self.manager.settings["min_history"], int)
+        self.assertEqual(self.manager.settings["min_history"], 6)
+
+    def test_recent_days_is_a_whole_number(self):
+        self.manager.update_settings({"recent_days": 20})
+        self.assertIsInstance(self.manager.settings["recent_days"], int)
+        self.assertEqual(self.manager.settings["recent_days"], 20)
+
+    def test_the_file_holds_whole_numbers(self):
+        self.manager.update_settings({"min_history": 7, "recent_days": 21})
+        stored = (self.data_dir / "settings.json").read_text(encoding="utf-8")
+        self.assertIn('"min_history": 7', stored)
+        self.assertIn('"recent_days": 21', stored)
+        self.assertNotIn("7.0", stored)
+        self.assertNotIn("21.0", stored)
+
+    def test_the_thresholds_stay_floats(self):
+        self.manager.update_settings({"z_threshold": 3})
+        self.assertIsInstance(self.manager.settings["z_threshold"], float)
+
+
+class TestMissingSettingsDoNotCrashTheAlerts(unittest.TestCase):
+    """A hand-edited settings file must not break the alert code."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.data_dir = Path(self._tmp.name)
+        self.manager = BazarManager(self.data_dir)
+        self.manager.create_admin("admin", "admin123")
+        self.manager.login("admin", "admin123")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_a_missing_threshold_falls_back_to_the_default(self):
+        del self.manager.settings["z_threshold"]
+        record = self.manager.add_record(
+            "ONION", "Karwan Bazar", "2026-10-05", 40
+        )
+        level, z_value, _ = self.manager.alert_level_for(record)
+        self.assertIn(level, {"Normal", "Watch", "Spike"})
+
+    def test_a_null_threshold_falls_back_to_the_default(self):
+        self.manager.settings["z_threshold"] = None
+        record = self.manager.add_record(
+            "ONION", "Karwan Bazar", "2026-10-05", 40
+        )
+        level, z_value, _ = self.manager.alert_level_for(record)
+        self.assertIn(level, {"Normal", "Watch", "Spike"})
+
+    def test_a_missing_perishable_threshold_falls_back_to_the_default(self):
+        del self.manager.settings["perishable_pct_threshold"]
+        record = self.manager.add_record(
+            "ONION", "Karwan Bazar", "2026-10-05", 40
+        )
+        level, z_value, _ = self.manager.alert_level_for(record)
+        self.assertIn(level, {"Normal", "Watch", "Spike"})
+
+
 if __name__ == "__main__":
     unittest.main()

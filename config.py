@@ -51,6 +51,10 @@ PCT_THRESHOLD_RANGE = (1.0, 200.0)
 MIN_HISTORY_RANGE = (2, 50)
 RECENT_DAYS_RANGE = (1, 90)
 
+# The settings that count something rather than measure it.  They are
+# stored as whole numbers.
+COUNT_SETTINGS = ("min_history", "recent_days")
+
 # How a basket total is compared with the weekly budget: up to
 # BUDGET_CLOSE_PERCENT of the budget is "Within budget", up to
 # BUDGET_FULL_PERCENT is "Close to budget", and above that is over.
@@ -191,12 +195,17 @@ DEFAULT_PRODUCTS: tuple[ProductEntry, ...] = (
 )
 
 # --- Default settings -------------------------------------------------------
+DEFAULT_Z_THRESHOLD = 2.0
+DEFAULT_PCT_THRESHOLD = 15.0
+DEFAULT_PERISHABLE_Z_THRESHOLD = 2.5
+DEFAULT_PERISHABLE_PCT_THRESHOLD = 25.0
+
 DEFAULT_SETTINGS = {
     "markets": list(DEFAULT_MARKETS),
-    "z_threshold": 2.0,
-    "pct_threshold": 15.0,
-    "perishable_z_threshold": 2.5,
-    "perishable_pct_threshold": 25.0,
+    "z_threshold": DEFAULT_Z_THRESHOLD,
+    "pct_threshold": DEFAULT_PCT_THRESHOLD,
+    "perishable_z_threshold": DEFAULT_PERISHABLE_Z_THRESHOLD,
+    "perishable_pct_threshold": DEFAULT_PERISHABLE_PCT_THRESHOLD,
     "min_history": 5,
     "recent_days": 14,
     "show_bangla_names": True,
