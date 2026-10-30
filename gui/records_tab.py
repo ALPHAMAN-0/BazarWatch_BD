@@ -30,10 +30,14 @@ class EditRecordDialog(tk.Toplevel):
         self.resizable(False, False)
         self.grab_set()
 
-        self.product_var = tk.StringVar(value=record.product_id)
+        self.product_var = tk.StringVar(
+            value=self.manager.product_label(record.product_id)
+        )
         self.market_var = tk.StringVar(value=record.market)
         self.date_var = tk.StringVar(value=record.date)
         self.price_var = tk.StringVar(value=f"{record.price:g}")
+        # The dropdown labels and the product IDs they stand for.
+        self._product_options: list[tuple[str, str]] = []
 
         frame = ttk.Frame(self, padding=14)
         frame.grid(row=0, column=0, sticky="nsew")
@@ -44,10 +48,10 @@ class EditRecordDialog(tk.Toplevel):
             frame,
             textvariable=self.product_var,
             state="readonly",
-            values=sorted(self.manager.products),
             width=24,
         )
         self.product_box.grid(row=0, column=1, sticky="ew", pady=5)
+        self._refresh_products()
 
         ttk.Label(frame, text="Market:").grid(row=1, column=0, sticky="w", pady=5)
         self.market_box = ttk.Combobox(
@@ -83,12 +87,25 @@ class EditRecordDialog(tk.Toplevel):
 
         self.grab_set()
 
+    def _refresh_products(self) -> None:
+        """Fill the product dropdown."""
+        self._product_options = self.manager.product_options()
+        self.product_box["values"] = [label for label, _ in self._product_options]
+
+    def _selected_product_id(self) -> str:
+        """The product ID the chosen label stands for."""
+        chosen = self.product_var.get()
+        for label, product_id in self._product_options:
+            if label == chosen:
+                return product_id
+        return self.record.product_id
+
     def _save(self) -> None:
         """Apply the changes."""
         try:
             self.manager.update_record(
                 self.record.record_id,
-                product_id=self.product_var.get(),
+                product_id=self._selected_product_id(),
                 market=self.market_var.get(),
                 date=self.date_var.get(),
                 price=self.price_var.get(),
@@ -128,6 +145,8 @@ class RecordsTab(Tab):
         self.level_var = tk.StringVar()
         self.from_var = tk.StringVar()
         self.to_var = tk.StringVar()
+        # The dropdown labels and the product IDs they stand for.
+        self._product_options: list[tuple[str, str]] = []
 
         self._build()
         self.refresh()
@@ -243,13 +262,19 @@ class RecordsTab(Tab):
         """Reload the table with the current filters."""
         show_bn = self.manager.show_bangla_names()
 
-        self.product_box["values"] = ("", *sorted(self.manager.products))
+        # The product labels carry the product ID, so two products that
+        # share a name can still be told apart in the filter.
+        self._product_options = self.manager.product_options()
+        self.product_box["values"] = (
+            "",
+            *(label for label, _ in self._product_options),
+        )
         self.market_box["values"] = ("", *self.manager.markets())
         self.user_box["values"] = ("", *sorted(self.manager.users))
 
         try:
             results = self.manager.filter_records(
-                product_id=self.product_var.get() or None,
+                product_id=self._selected_product_id() or None,
                 market=self.market_var.get() or None,
                 added_by=self.user_var.get() or None,
                 search=self.search_var.get() or None,
@@ -261,43 +286,47 @@ class RecordsTab(Tab):
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
 
-        # Rebuilding the table drops the selection, so remember which
-        # row was chosen and put the selection back afterwards.
-        chosen = self.table.selected_id()
-
-        self.table.clear()
-        for record in results:
-            level, z_value, pct_value = alert_level(
-                record,
-                self.manager.records,
-                self.manager.products,
-                self.manager.settings,
-            )
-            product = self.manager.products.get(record.product_id)
-            name = (
-                product.display_name(show_bn) if product else record.product_id
-            )
-            self.table.add_row(
-                [
-                    record.record_id,
-                    name,
-                    record.market,
-                    record.date,
-                    f"{record.price:.2f}",
-                    record.added_by,
-                    level,
-                    f"{z_value:.2f}" if z_value is not None else "-",
-                    f"{pct_value:+.1f}%" if pct_value is not None else "ref not set",
-                ],
-                level=level,
-                item_id=record.record_id,
-            )
-
-        if chosen and self.table.tree.exists(chosen):
-            self.table.tree.selection_set(chosen)
+        # Rebuilding the table drops the selection, so the chosen row is
+        # put back afterwards.
+        with self.table.preserve_selection():
+            self.table.clear()
+            for record in results:
+                level, z_value, pct_value = alert_level(
+                    record,
+                    self.manager.records,
+                    self.manager.products,
+                    self.manager.settings,
+                )
+                product = self.manager.products.get(record.product_id)
+                name = (
+                    product.display_name(show_bn) if product else record.product_id
+                )
+                self.table.add_row(
+                    [
+                        record.record_id,
+                        name,
+                        record.market,
+                        record.date,
+                        f"{record.price:.2f}",
+                        record.added_by,
+                        level,
+                        f"{z_value:.2f}" if z_value is not None else "-",
+                        f"{pct_value:+.1f}%" if pct_value is not None else "ref not set",
+                    ],
+                    level=level,
+                    item_id=record.record_id,
+                )
 
         self.status_var.set(f"{len(results)} record(s) shown.")
         self._update_buttons()
+
+    def _selected_product_id(self) -> str | None:
+        """The product ID the filter stands for."""
+        chosen = self.product_var.get()
+        for label, product_id in self._product_options:
+            if label == chosen:
+                return product_id
+        return None
 
     def _update_buttons(self) -> None:
         """Enable Edit and Delete only when the action is allowed."""

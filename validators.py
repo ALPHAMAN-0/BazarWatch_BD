@@ -103,6 +103,28 @@ def validate_date(value) -> date:
     return parsed
 
 
+def validate_date_filter(value) -> str:
+    """A date used as a filter boundary.
+
+    Only the format is checked: a filter may name a date in the future,
+    because it is a bound and not a record.  The result is the date in
+    YYYY-MM-DD form, so it can be compared with a record date as a string.
+    """
+    if isinstance(value, datetime):
+        value = value.date()
+    if isinstance(value, date):
+        return value.isoformat()
+    if not isinstance(value, str):
+        raise ValidationError("Date must be in YYYY-MM-DD format")
+    text = value.strip()
+    if not text:
+        raise ValidationError("Date is required")
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date().isoformat()
+    except ValueError:
+        raise ValidationError("Date must be in YYYY-MM-DD format") from None
+
+
 def validate_threshold(name: str, value) -> float:
     """Validate an Admin-editable threshold against its allowed range."""
     number = _to_number(value, "Value")

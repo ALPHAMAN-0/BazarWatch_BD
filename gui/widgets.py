@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import sys
 import tkinter as tk
+from contextlib import contextmanager
 from tkinter import messagebox, ttk
 from typing import Literal
 
@@ -178,6 +179,22 @@ class AlertTable(ttk.Frame):
         """Remove every row."""
         for item in self.tree.get_children():
             self.tree.delete(item)
+
+    @contextmanager
+    def preserve_selection(self):
+        """Keep the chosen row selected across a rebuild of the table.
+
+        Rebuilding the table deletes the rows, and the selection goes with
+        them.  This remembers the chosen row and puts the selection back
+        once the new rows are in place.
+        """
+        chosen = self.tree.selection()
+        chosen = chosen[0] if chosen else None
+        try:
+            yield
+        finally:
+            if chosen and self.tree.exists(chosen):
+                self.tree.selection_set(chosen)
 
     def add_row(self, values: list, level: str = "Normal", item_id=None) -> None:
         """Add a row, coloured by its alert level."""

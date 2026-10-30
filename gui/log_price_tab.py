@@ -30,6 +30,8 @@ class LogPriceTab(Tab):
         self.result_var = tk.StringVar()
         self.detail_var = tk.StringVar()
         self.result_label = None
+        # The dropdown labels and the product IDs they stand for.
+        self._product_options: list[tuple[str, str]] = []
 
         self._build()
         self.refresh_choices()
@@ -108,28 +110,29 @@ class LogPriceTab(Tab):
 
     def refresh_choices(self) -> None:
         """Reload the product and market dropdowns."""
-        show_bn = self.manager.show_bangla_names()
-        names = [
-            product.display_name(show_bn)
-            for product in self.manager.products.values()
-        ]
-        self.product_box["values"] = names
-        if names and not self.product_var.get():
-            self.product_var.set(names[0])
+        # The labels carry the product ID, so two products that share a
+        # name can still be told apart in the list.
+        self._product_options = self.manager.product_options()
+        labels = [label for label, _ in self._product_options]
+        self.product_box["values"] = labels
+        if labels and self.product_var.get() not in labels:
+            self.product_var.set(labels[0])
 
         markets = self.manager.markets()
         self.market_box["values"] = markets
         if markets and not self.market_var.get():
             self.market_var.set(markets[0])
 
+    def _product_id_for(self, label: str) -> str | None:
+        """The product ID a dropdown label stands for."""
+        for option_label, product_id in self._product_options:
+            if option_label == label:
+                return product_id
+        return None
+
     def _selected_product_id(self) -> str | None:
         """The ID of the product chosen in the dropdown."""
-        chosen = self.product_var.get()
-        show_bn = self.manager.show_bangla_names()
-        for product in self.manager.products.values():
-            if product.display_name(show_bn) == chosen:
-                return product.product_id
-        return None
+        return self._product_id_for(self.product_var.get())
 
     def _on_product(self) -> None:
         """Show the reference price of the chosen product."""

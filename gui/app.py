@@ -138,7 +138,11 @@ class BazarApp(tk.Tk):
 
         # The Admin tab is only for an Admin.
         if user.can_manage():
-            admin_tab = AdminTab(notebook, self.manager, self.logger)
+            # The callback tells the other tabs when the Admin changes
+            # something they show, such as the product list.
+            admin_tab = AdminTab(
+                notebook, self.manager, self.logger, self.refresh_all
+            )
             self._tabs["Admin"] = admin_tab
             notebook.add(admin_tab, text="Admin")
 

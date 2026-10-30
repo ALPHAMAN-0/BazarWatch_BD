@@ -25,6 +25,8 @@ class BasketTab(Tab):
         self.product_var = tk.StringVar()
         self.quantity_var = tk.StringVar(value="1")
         self.budget_var = tk.StringVar(value="0")
+        # The dropdown labels and the product IDs they stand for.
+        self._product_options: list[tuple[str, str]] = []
 
         self._build()
         self.refresh()
@@ -168,9 +170,11 @@ class BasketTab(Tab):
             return
         show_bn = manager.show_bangla_names()
 
+        # The labels carry the product ID, so two products that share a
+        # name can still be told apart in the dropdown.
+        self._product_options = manager.product_options()
         self.product_box["values"] = [
-            product.display_name(show_bn)
-            for product in manager.products.values()
+            label for label, _ in self._product_options
         ]
 
         basket = manager.get_basket(username)
@@ -261,10 +265,9 @@ class BasketTab(Tab):
     def _selected_product_id(self) -> str | None:
         """The ID of the product chosen in the dropdown."""
         chosen = self.product_var.get()
-        show_bn = self.manager.show_bangla_names()
-        for product in self.manager.products.values():
-            if product.display_name(show_bn) == chosen:
-                return product.product_id
+        for label, product_id in self._product_options:
+            if label == chosen:
+                return product_id
         return None
 
     def _add_item(self) -> None:

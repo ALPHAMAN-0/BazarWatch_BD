@@ -324,10 +324,10 @@ class TestRecordsTabActions(GuiTestCase):
         self.assertEqual(len(self.tab.table.tree.get_children()), 1)
 
     def test_the_product_filter_narrows_the_table(self):
-        self.tab.product_var.set("ONION")
+        self.tab.product_var.set(self.manager.product_label("ONION"))
         self.tab.refresh()
         self.assertEqual(len(self.tab.table.tree.get_children()), 1)
-        self.tab.product_var.set("RICE")
+        self.tab.product_var.set(self.manager.product_label("RICE"))
         self.tab.refresh()
         self.assertEqual(len(self.tab.table.tree.get_children()), 0)
 
@@ -533,9 +533,7 @@ class TestBasketTabActions(GuiTestCase):
 
     def _choose(self, product_id):
         """Pick a product in the dropdown."""
-        show_bn = self.manager.show_bangla_names()
-        name = self.manager.products[product_id].display_name(show_bn)
-        self.tab.product_var.set(name)
+        self.tab.product_var.set(self.manager.product_label(product_id))
 
     def test_adding_an_item_without_a_product_shows_a_message(self):
         self.tab.product_var.set("")
@@ -765,6 +763,102 @@ class TestAdminTab(GuiTestCase):
         tab.settings_tab.vars["z_threshold"].set("99")
         tab.settings_tab._save()
         self.assertEqual(self.manager.settings["z_threshold"], 2.0)
+
+
+class TestDropdownLabelsAreUnique(GuiTestCase):
+    """Two products with the same name must still be tellable apart."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("admin", "admin123")
+
+    def _add_product(self, product_id):
+        """Add a product through the Admin tab, as a user would."""
+        products = self.app._tabs["Admin"].products_tab
+        products.product_id_var.set(product_id)
+        products.name_var.set("Rice")
+        products.name_bn_var.set("চাল")
+        products.unit_var.set("kg")
+        products.category_var.set("Grains")
+        products._add_product()
+
+    def test_the_log_price_dropdown_names_the_product_id(self):
+        self._add_product("RICE1")
+        self._add_product("RICE2")
+        tab = self.app._tabs["Log Price"]
+        values = list(tab.product_box["values"])
+        self.assertTrue(
+            any("RICE1" in value for value in values),
+            f"The dropdown does not name the product ID: {values}",
+        )
+        self.assertTrue(
+            any("RICE2" in value for value in values),
+            f"The dropdown does not name the product ID: {values}",
+        )
+
+    def test_the_two_products_map_back_to_the_right_ids(self):
+        self._add_product("RICE1")
+        self._add_product("RICE2")
+        tab = self.app._tabs["Log Price"]
+        ids = {
+            tab._product_id_for(label)
+            for label in tab.product_box["values"]
+            if "Rice" in label
+        }
+        self.assertEqual(ids, {"RICE1", "RICE2"})
+
+    def test_the_records_filter_names_the_product_id(self):
+        self._add_product("RICE1")
+        self._add_product("RICE2")
+        tab = self.app._tabs["Records"]
+        values = list(tab.product_box["values"])
+        self.assertTrue(
+            any("RICE1" in value for value in values)
+            and any("RICE2" in value for value in values),
+            f"The filter does not tell the two Rices apart: {values}",
+        )
+
+    def test_a_new_product_shows_up_in_the_log_price_dropdown(self):
+        # The Admin adds a product; the Log Price tab has to offer it
+        # without the user reloading the data by hand.
+        self._add_product("MILK2")
+        tab = self.app._tabs["Log Price"]
+        self.assertIn("MILK2", " ".join(tab.product_box["values"]))
+
+    def test_the_basket_dropdown_shows_the_new_product(self):
+        self._add_product("MILK2")
+        tab = self.app._tabs["My Basket"]
+        self.assertIn("MILK2", " ".join(tab.product_box["values"]))
+
+
+class TestAdminSelectionSurvivesARefresh(GuiTestCase):
+    """The Admin sub-tabs must keep the selected row across a refresh."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("admin", "admin123")
+        self.tab = self.app._tabs["Admin"]
+
+    def test_the_users_selection_survives_a_refresh(self):
+        users = self.tab.users_tab
+        users.refresh()
+        users.table.tree.selection_set("rafi")
+        users.refresh()
+        self.assertEqual(users.table.selected_id(), "rafi")
+
+    def test_the_products_selection_survives_a_refresh(self):
+        products = self.tab.products_tab
+        products.refresh()
+        products.table.tree.selection_set("ONION")
+        products.refresh()
+        self.assertEqual(products.table.selected_id(), "ONION")
+
+    def test_the_markets_selection_survives_a_refresh(self):
+        markets = self.tab.markets_tab
+        markets.refresh()
+        markets.table.tree.selection_set("Karwan Bazar")
+        markets.refresh()
+        self.assertEqual(markets.table.selected_id(), "Karwan Bazar")
 
 
 class TestMenuActions(GuiTestCase):

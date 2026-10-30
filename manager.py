@@ -23,6 +23,7 @@ from validators import (
     ValidationError,
     validate_budget,
     validate_date,
+    validate_date_filter,
     validate_market_name,
     validate_password,
     validate_price,
@@ -376,6 +377,29 @@ class BazarManager:
         """The list of markets."""
         return list(self.settings["markets"])
 
+    def product_label(self, product_id: str) -> str:
+        """The label a product shows in a dropdown.
+
+        Two products may share a name, so the ID is always part of the
+        label.  Without it the user cannot tell the two apart.
+        """
+        product = self.products.get(product_id)
+        if product is None:
+            return product_id
+        name = product.display_name(self.show_bangla_names())
+        return f"{name} [{product.product_id}]"
+
+    def product_options(self) -> list[tuple[str, str]]:
+        """Every product as a ``(label, product_id)`` pair.
+
+        The label is unique, so a dropdown can hold it without the user
+        being unable to tell two products of the same name apart.
+        """
+        return [
+            (self.product_label(product_id), product_id)
+            for product_id in sorted(self.products)
+        ]
+
     # -- price records ------------------------------------------------------
     def add_record(
         self, product_id: str, market: str, record_date, price
@@ -499,7 +523,11 @@ class BazarManager:
         date_to: str | None = None,
         level: str | None = None,
     ) -> list[PriceRecord]:
-        """Filter the records.  Every argument is optional; empty means 'all'."""
+        """Filter the records.  Every argument is optional; empty means 'all'.
+
+        A malformed date filter is refused with a ValidationError rather
+        than quietly comparing the text as a string.
+        """
         results = self.records
         if product_id:
             results = [r for r in results if r.product_id == product_id]
@@ -508,9 +536,11 @@ class BazarManager:
         if added_by:
             results = [r for r in results if r.added_by == added_by]
         if date_from:
-            results = [r for r in results if r.date >= date_from]
+            lower = validate_date_filter(date_from)
+            results = [r for r in results if r.date >= lower]
         if date_to:
-            results = [r for r in results if r.date <= date_to]
+            upper = validate_date_filter(date_to)
+            results = [r for r in results if r.date <= upper]
         if search:
             needle = search.strip().lower()
             if needle:

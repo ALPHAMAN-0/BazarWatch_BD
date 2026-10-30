@@ -122,14 +122,16 @@ def build_weekly_report(
     lines.append("")
 
     # -- cheapest market -------------------------------------------------
-    lines.append("-" * 68)
-    lines.append("CHEAPEST MARKET PER PRODUCT (last 14 days)")
-    lines.append("-" * 68)
     recent_days = int(settings.get("recent_days", 14))
+    lines.append("-" * 68)
+    lines.append(f"CHEAPEST MARKET PER PRODUCT (last {recent_days} days)")
+    lines.append("-" * 68)
     for product_id in sorted(products):
         product = products[product_id]
+        # The window ends on the report date, so this section matches the
+        # week the rest of the report covers.
         market, average = cheapest_market(
-            product_id, records, markets, recent_days
+            product_id, records, markets, recent_days, today=end_date
         )
         name = product.display_name(show_bangla)
         if market is None:

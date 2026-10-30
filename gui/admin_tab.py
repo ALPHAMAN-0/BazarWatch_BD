@@ -20,13 +20,31 @@ from gui.widgets import (
 )
 
 
-class UsersSubTab(ttk.Frame):
-    """Add and remove members, and reset passwords."""
+class AdminSubTab(ttk.Frame):
+    """What every Admin sub-page has in common.
 
-    def __init__(self, parent, manager, logger=None):
+    A sub-page that changes shared data -- the product list, the market
+    list, the settings -- tells the rest of the app about it, so the
+    dropdowns on the other tabs do not keep offering the old list.
+    """
+
+    def __init__(self, parent, manager, logger=None, on_data_changed=None):
         super().__init__(parent, padding=10)
         self.manager = manager
         self.logger = logger
+        self.on_data_changed = on_data_changed
+
+    def _changed(self) -> None:
+        """Tell the other tabs that the data has changed."""
+        if self.on_data_changed is not None:
+            self.on_data_changed()
+
+
+class UsersSubTab(AdminSubTab):
+    """Add and remove members, and reset passwords."""
+
+    def __init__(self, parent, manager, logger=None, on_data_changed=None):
+        super().__init__(parent, manager, logger, on_data_changed)
 
         self.username_var = tk.StringVar()
         self.password_var = tk.StringVar()
@@ -83,25 +101,27 @@ class UsersSubTab(ttk.Frame):
 
     def refresh(self) -> None:
         """Reload the user table."""
-        self.table.clear()
         try:
             users = self.manager.list_users()
         except Exception as exc:
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
         counts = self.manager.records_per_user()
-        for user in users:
-            self.table.add_row(
-                [
-                    user.username,
-                    user.role,
-                    user.created_at or "-",
-                    user.last_login or "never",
-                    counts.get(user.username, 0),
-                ],
-                level="Normal",
-                item_id=user.username,
-            )
+        # The chosen row stays selected across the rebuild.
+        with self.table.preserve_selection():
+            self.table.clear()
+            for user in users:
+                self.table.add_row(
+                    [
+                        user.username,
+                        user.role,
+                        user.created_at or "-",
+                        user.last_login or "never",
+                        counts.get(user.username, 0),
+                    ],
+                    level="Normal",
+                    item_id=user.username,
+                )
 
     def _add_member(self) -> None:
         """Add a new member."""
@@ -160,13 +180,11 @@ class UsersSubTab(ttk.Frame):
         )
 
 
-class ProductsSubTab(ttk.Frame):
+class ProductsSubTab(AdminSubTab):
     """Add, edit and remove products, and set the reference prices."""
 
-    def __init__(self, parent, manager, logger=None):
-        super().__init__(parent, padding=10)
-        self.manager = manager
-        self.logger = logger
+    def __init__(self, parent, manager, logger=None, on_data_changed=None):
+        super().__init__(parent, manager, logger, on_data_changed)
 
         self.product_id_var = tk.StringVar()
         self.name_var = tk.StringVar()
@@ -277,27 +295,29 @@ class ProductsSubTab(ttk.Frame):
 
     def refresh(self) -> None:
         """Reload the product table."""
-        self.table.clear()
         counts: dict[str, int] = {}
         for record in self.manager.records:
             counts[record.product_id] = counts.get(record.product_id, 0) + 1
-        for product_id, product in sorted(self.manager.products.items()):
-            self.table.add_row(
-                [
-                    product.product_id,
-                    product.name,
-                    product.name_bn,
-                    product.unit,
-                    product.category,
-                    f"{product.reference_price:.2f}"
-                    if product.reference_price is not None
-                    else "-",
-                    "yes" if product.perishable else "no",
-                    counts.get(product_id, 0),
-                ],
-                level="Normal",
-                item_id=product_id,
-            )
+        # The chosen row stays selected across the rebuild.
+        with self.table.preserve_selection():
+            self.table.clear()
+            for product_id, product in sorted(self.manager.products.items()):
+                self.table.add_row(
+                    [
+                        product.product_id,
+                        product.name,
+                        product.name_bn,
+                        product.unit,
+                        product.category,
+                        f"{product.reference_price:.2f}"
+                        if product.reference_price is not None
+                        else "-",
+                        "yes" if product.perishable else "no",
+                        counts.get(product_id, 0),
+                    ],
+                    level="Normal",
+                    item_id=product_id,
+                )
 
     def _add_product(self) -> None:
         """Add a product to the catalogue."""
@@ -320,6 +340,7 @@ class ProductsSubTab(ttk.Frame):
         self.reference_var.set("")
         self.perishable_var.set(False)
         self.refresh()
+        self._changed()
 
     def _set_reference(self, product_id=None) -> None:
         """Set or clear the reference price of a product."""
@@ -346,6 +367,7 @@ class ProductsSubTab(ttk.Frame):
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
         self.refresh()
+        self._changed()
 
     def _remove_product(self) -> None:
         """Remove the selected product."""
@@ -365,15 +387,14 @@ class ProductsSubTab(ttk.Frame):
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
         self.refresh()
+        self._changed()
 
 
-class MarketsSubTab(ttk.Frame):
+class MarketsSubTab(AdminSubTab):
     """Add and remove markets."""
 
-    def __init__(self, parent, manager, logger=None):
-        super().__init__(parent, padding=10)
-        self.manager = manager
-        self.logger = logger
+    def __init__(self, parent, manager, logger=None, on_data_changed=None):
+        super().__init__(parent, manager, logger, on_data_changed)
 
         self.market_var = tk.StringVar()
 
@@ -418,14 +439,16 @@ class MarketsSubTab(ttk.Frame):
 
     def refresh(self) -> None:
         """Reload the market table."""
-        self.table.clear()
         counts: dict[str, int] = {}
         for record in self.manager.records:
             counts[record.market] = counts.get(record.market, 0) + 1
-        for market in self.manager.markets():
-            self.table.add_row(
-                [market, counts.get(market, 0)], level="Normal", item_id=market
-            )
+        # The chosen row stays selected across the rebuild.
+        with self.table.preserve_selection():
+            self.table.clear()
+            for market in self.manager.markets():
+                self.table.add_row(
+                    [market, counts.get(market, 0)], level="Normal", item_id=market
+                )
 
     def _add_market(self) -> None:
         """Add a market."""
@@ -436,6 +459,7 @@ class MarketsSubTab(ttk.Frame):
             return
         self.market_var.set("")
         self.refresh()
+        self._changed()
 
     def _remove_market(self) -> None:
         """Remove the selected market."""
@@ -455,15 +479,14 @@ class MarketsSubTab(ttk.Frame):
             handle_error(self.winfo_toplevel(), exc, self.logger)
             return
         self.refresh()
+        self._changed()
 
 
-class SettingsSubTab(ttk.Frame):
+class SettingsSubTab(AdminSubTab):
     """Change the alert thresholds and the other options."""
 
-    def __init__(self, parent, manager, logger=None):
-        super().__init__(parent, padding=10)
-        self.manager = manager
-        self.logger = logger
+    def __init__(self, parent, manager, logger=None, on_data_changed=None):
+        super().__init__(parent, manager, logger, on_data_changed)
 
         self.vars = {
             "z_threshold": tk.StringVar(),
@@ -555,6 +578,7 @@ class SettingsSubTab(ttk.Frame):
             return
         self.status_var.set("The settings were saved.")
         self.refresh()
+        self._changed()
 
     def _reset(self) -> None:
         """Put the default settings back."""
@@ -576,18 +600,30 @@ class SettingsSubTab(ttk.Frame):
 class AdminTab(Tab):
     """The Admin tab, with the Users, Products, Markets and Settings pages."""
 
-    def __init__(self, parent, manager, logger=None):
+    def __init__(self, parent, manager, logger=None, on_data_changed=None):
         super().__init__(parent, padding=8)
         self.manager = manager
         self.logger = logger
+        # Called after a change that other tabs have to know about, such as
+        # adding a product: the Log Price dropdown would otherwise keep
+        # offering the old list.
+        self.on_data_changed = on_data_changed
 
         self.notebook = ttk.Notebook(self)
         self.notebook.grid(row=0, column=0, sticky="nsew")
 
-        self.users_tab = UsersSubTab(self.notebook, manager, logger)
-        self.products_tab = ProductsSubTab(self.notebook, manager, logger)
-        self.markets_tab = MarketsSubTab(self.notebook, manager, logger)
-        self.settings_tab = SettingsSubTab(self.notebook, manager, logger)
+        self.users_tab = UsersSubTab(
+            self.notebook, manager, logger, on_data_changed
+        )
+        self.products_tab = ProductsSubTab(
+            self.notebook, manager, logger, on_data_changed
+        )
+        self.markets_tab = MarketsSubTab(
+            self.notebook, manager, logger, on_data_changed
+        )
+        self.settings_tab = SettingsSubTab(
+            self.notebook, manager, logger, on_data_changed
+        )
 
         self.notebook.add(self.users_tab, text="Users")
         self.notebook.add(self.products_tab, text="Products")
