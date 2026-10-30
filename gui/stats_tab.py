@@ -8,11 +8,11 @@ from datetime import date
 from tkinter import ttk
 
 from analytics import alerts_for, product_statistics
-from gui.widgets import AlertTable, handle_error, show_info
+from gui.widgets import AlertTable, Tab, handle_error, show_info
 from reports import build_weekly_report, save_weekly_report
 
 
-class StatsTab(ttk.Frame):
+class StatsTab(Tab):
     """Statistics per product, the Spike/Watch list and the weekly report."""
 
     def __init__(self, parent, manager, logger=None):

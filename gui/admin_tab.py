@@ -13,6 +13,7 @@ from tkinter import simpledialog, ttk
 import config
 from gui.widgets import (
     AlertTable,
+    Tab,
     confirm,
     handle_error,
     show_info,
@@ -277,7 +278,7 @@ class ProductsSubTab(ttk.Frame):
     def refresh(self) -> None:
         """Reload the product table."""
         self.table.clear()
-        counts = {}
+        counts: dict[str, int] = {}
         for record in self.manager.records:
             counts[record.product_id] = counts.get(record.product_id, 0) + 1
         for product_id, product in sorted(self.manager.products.items()):
@@ -418,7 +419,7 @@ class MarketsSubTab(ttk.Frame):
     def refresh(self) -> None:
         """Reload the market table."""
         self.table.clear()
-        counts = {}
+        counts: dict[str, int] = {}
         for record in self.manager.records:
             counts[record.market] = counts.get(record.market, 0) + 1
         for market in self.manager.markets():
@@ -572,7 +573,7 @@ class SettingsSubTab(ttk.Frame):
         self.refresh()
 
 
-class AdminTab(ttk.Frame):
+class AdminTab(Tab):
     """The Admin tab, with the Users, Products, Markets and Settings pages."""
 
     def __init__(self, parent, manager, logger=None):

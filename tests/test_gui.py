@@ -78,13 +78,13 @@ if TK_AVAILABLE:
         gui.log_price_tab, gui.records_tab, gui.stats_tab,
     ):
         if hasattr(_module, "show_error"):
-            _module.show_error = _fake_showerror
+            _module.show_error = _fake_showerror  # type: ignore[attr-defined]
         if hasattr(_module, "show_info"):
-            _module.show_info = _fake_showinfo
+            _module.show_info = _fake_showinfo  # type: ignore[attr-defined]
         if hasattr(_module, "show_warning"):
-            _module.show_warning = _fake_showwarning
+            _module.show_warning = _fake_showwarning  # type: ignore[attr-defined]
         if hasattr(_module, "confirm"):
-            _module.confirm = _fake_confirm
+            _module.confirm = _fake_confirm  # type: ignore[attr-defined]
 
 
 @unittest.skipUnless(TK_AVAILABLE, "no display available")

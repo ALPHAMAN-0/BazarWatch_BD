@@ -7,10 +7,10 @@ from datetime import date
 from tkinter import ttk
 
 from analytics import alert_level
-from gui.widgets import handle_error, level_label, show_info
+from gui.widgets import Tab, handle_error, level_label, show_info
 
 
-class LogPriceTab(ttk.Frame):
+class LogPriceTab(Tab):
     """Choose a product and market, type a price and save it.
 
     After saving, the alert level is shown in colour together with the

@@ -6,7 +6,14 @@ import tkinter as tk
 from tkinter import ttk
 
 from analytics import alert_level
-from gui.widgets import AlertTable, confirm, handle_error, show_info
+from gui.widgets import (
+    AlertTable,
+    ColumnDef,
+    Tab,
+    confirm,
+    handle_error,
+    show_info,
+)
 
 
 class EditRecordDialog(tk.Toplevel):
@@ -94,10 +101,10 @@ class EditRecordDialog(tk.Toplevel):
         self.destroy()
 
 
-class RecordsTab(ttk.Frame):
+class RecordsTab(Tab):
     """Search and filter the price records, and edit or delete them."""
 
-    COLUMNS = (
+    COLUMNS: tuple[ColumnDef, ...] = (
         ("record_id", "ID", "center", 70),
         ("product", "Product", "w", 160),
         ("market", "Market", "w", 150),

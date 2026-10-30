@@ -22,6 +22,19 @@ Anchor = Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"]
 # shown to the user, the anchor and the width in pixels.
 ColumnDef = tuple[str, str, Anchor, int]
 
+
+class Tab(ttk.Frame):
+    """What every tab in the notebook must be able to do.
+
+    The main window calls ``refresh()`` on each tab whenever the data
+    changes, so every tab has to provide it.  Every tab is also a
+    ``ttk.Frame``, because that is what the notebook holds.
+    """
+
+    def refresh(self) -> None:
+        """Reload the tab from the manager."""
+        raise NotImplementedError
+
 # -- Colours -----------------------------------------------------------------
 # Spike is red, Watch is amber, Normal is plain.
 COLOUR_SPIKE = "#c62828"
@@ -56,6 +69,7 @@ def setup_error_log() -> logging.Logger:
     if logger.handlers:
         return logger
     logger.setLevel(logging.ERROR)
+    handler: logging.Handler
     try:
         config.DATA_DIR.mkdir(parents=True, exist_ok=True)
         handler = logging.FileHandler(config.ERROR_LOG_FILE, encoding="utf-8")

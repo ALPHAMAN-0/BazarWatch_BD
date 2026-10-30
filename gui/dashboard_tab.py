@@ -7,10 +7,10 @@ from datetime import date, timedelta
 from tkinter import ttk
 
 from analytics import alert_level, cheapest_market_for_all
-from gui.widgets import AlertTable, format_price
+from gui.widgets import AlertTable, Tab, format_price
 
 
-class DashboardTab(ttk.Frame):
+class DashboardTab(Tab):
     """The overview shown when the app opens.
 
     It shows the totals, the cheapest market for each product, the products

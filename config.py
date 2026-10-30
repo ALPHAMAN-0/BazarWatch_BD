@@ -7,6 +7,7 @@ any working folder.
 """
 
 from pathlib import Path
+from typing import TypedDict
 
 # --- Paths -------------------------------------------------------------------
 # BASE_DIR is the folder holding this file; data/ and reports/ sit next to it.
@@ -63,9 +64,22 @@ DEFAULT_MARKETS = (
     "Shwapno",
 )
 
+
+class ProductEntry(TypedDict):
+    """One entry of the starter product catalogue."""
+
+    product_id: str
+    name: str
+    name_bn: str
+    unit: str
+    category: str
+    reference_price: float | None
+    perishable: bool
+
+
 # The product catalogue.  Reference prices start empty: the Admin fills them in
 # from the Trading Corporation of Bangladesh daily market price list.
-DEFAULT_PRODUCTS = (
+DEFAULT_PRODUCTS: tuple[ProductEntry, ...] = (
     {
         "product_id": "RICE",
         "name": "Coarse rice",

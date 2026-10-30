@@ -182,10 +182,10 @@ class BazarManager:
 
     def remove_member(self, username: str) -> None:
         """Remove a member, keeping their price records.  Admin only."""
-        self._require_admin()
+        admin = self._require_admin()
         if username not in self.users:
             raise RecordNotFoundError(f"No user called '{username}'.")
-        if username == self.current_user.username:
+        if username == admin.username:
             raise ValidationError("You cannot remove your own account.")
         if self.users[username].role == "admin":
             raise ValidationError("An Admin account cannot be removed.")

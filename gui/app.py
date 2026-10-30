@@ -18,6 +18,7 @@ from gui.login_view import LoginView
 from gui.records_tab import RecordsTab
 from gui.stats_tab import StatsTab
 from gui.widgets import (
+    Tab,
     apply_theme,
     handle_error,
     setup_error_log,
@@ -43,10 +44,17 @@ class BazarApp(tk.Tk):
 
         apply_theme(self)
 
-        self._tabs = {}
-        self._notebook = None
-        self._header = None
-        self._body = None
+        self._tabs: dict[str, Tab] = {}
+        self._notebook: ttk.Notebook | None = None
+        self._header: ttk.Frame | None = None
+
+        # The body is the only frame packed into the root window.  It
+        # holds the login screen first, and the header and the tabs
+        # after logging in.
+        self._body = ttk.Frame(self, padding=0)
+        self._body.pack(fill="both", expand=True)
+        self._body.rowconfigure(0, weight=1)
+        self._body.columnconfigure(0, weight=1)
 
         self._build_menu()
         self._show_login()
@@ -83,11 +91,6 @@ class BazarApp(tk.Tk):
 
     def _show_login(self) -> None:
         """Show the login screen."""
-        if self._body is None:
-            self._body = ttk.Frame(self, padding=0)
-            self._body.pack(fill="both", expand=True)
-            self._body.rowconfigure(0, weight=1)
-            self._body.columnconfigure(0, weight=1)
         self._clear_body()
 
         login = LoginView(self._body, self.manager, self._on_login_success)
@@ -120,23 +123,24 @@ class BazarApp(tk.Tk):
         ).pack(side="right", padx=4)
 
         # -- the tabs
-        self._notebook = ttk.Notebook(self._body)
-        self._notebook.grid(row=1, column=0, sticky="nsew")
+        notebook = ttk.Notebook(self._body)
+        notebook.grid(row=1, column=0, sticky="nsew")
+        self._notebook = notebook
 
-        self._tabs["Dashboard"] = DashboardTab(self._notebook, self.manager, self.logger)
-        self._tabs["Log Price"] = LogPriceTab(self._notebook, self.manager, self.logger)
-        self._tabs["Records"] = RecordsTab(self._notebook, self.manager, self.logger)
-        self._tabs["Statistics & Alerts"] = StatsTab(self._notebook, self.manager, self.logger)
-        self._tabs["My Basket"] = BasketTab(self._notebook, self.manager, self.logger)
+        self._tabs["Dashboard"] = DashboardTab(notebook, self.manager, self.logger)
+        self._tabs["Log Price"] = LogPriceTab(notebook, self.manager, self.logger)
+        self._tabs["Records"] = RecordsTab(notebook, self.manager, self.logger)
+        self._tabs["Statistics & Alerts"] = StatsTab(notebook, self.manager, self.logger)
+        self._tabs["My Basket"] = BasketTab(notebook, self.manager, self.logger)
 
         for name, tab in self._tabs.items():
-            self._notebook.add(tab, text=name)
+            notebook.add(tab, text=name)
 
         # The Admin tab is only for an Admin.
         if user.can_manage():
-            admin_tab = AdminTab(self._notebook, self.manager, self.logger)
+            admin_tab = AdminTab(notebook, self.manager, self.logger)
             self._tabs["Admin"] = admin_tab
-            self._notebook.add(admin_tab, text="Admin")
+            notebook.add(admin_tab, text="Admin")
 
         self.refresh_all()
 
@@ -197,7 +201,11 @@ class BazarApp(tk.Tk):
         )
         if new_password is None:
             return
-        username = self.manager.current_user.username
+        current = self.manager.current_user
+        if current is None:
+            show_info(self, "Please log in first.")
+            return
+        username = current.username
         try:
             self.manager.change_password(username, old_password, new_password)
         except Exception as exc:

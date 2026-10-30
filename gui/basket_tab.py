@@ -6,10 +6,10 @@ import tkinter as tk
 from tkinter import ttk
 
 from analytics import basket_plan, budget_status
-from gui.widgets import AlertTable, format_price, handle_error, show_info
+from gui.widgets import AlertTable, Tab, format_price, handle_error, show_info
 
 
-class BasketTab(ttk.Frame):
+class BasketTab(Tab):
     """Add items to the basket, set a budget and see the shopping plan.
 
     The plan shows the total per market, the best single market, the split
