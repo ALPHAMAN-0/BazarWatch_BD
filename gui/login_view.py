@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from gui.widgets import handle_error, show_error, show_info
+from gui.widgets import handle_error, show_info
 from validators import AuthError, ValidationError
 
 

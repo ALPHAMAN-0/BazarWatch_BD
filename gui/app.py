@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import tkinter as tk
 from datetime import date
-from tkinter import ttk
+from tkinter import simpledialog, ttk
 
-import config
 from gui.admin_tab import AdminTab
 from gui.basket_tab import BasketTab
 from gui.dashboard_tab import DashboardTab
@@ -182,8 +181,6 @@ class BazarApp(tk.Tk):
 
     def _change_password(self) -> None:
         """Let the current user change their password."""
-        from tkinter import simpledialog
-
         old_password = simpledialog.askstring(
             "Change password",
             "Current password:",

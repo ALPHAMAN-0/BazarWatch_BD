@@ -111,7 +111,6 @@ class DashboardTab(ttk.Frame):
         show_bn = manager.show_bangla_names()
         summary = manager.dashboard_summary()
         week_start = (date.today() - timedelta(days=6)).isoformat()
-        today = date.today().isoformat()
 
         this_week = [r for r in manager.records if r.date >= week_start]
         spikes = []

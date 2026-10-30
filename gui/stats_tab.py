@@ -173,8 +173,10 @@ class StatsTab(ttk.Frame):
         """The date the report ends on."""
         try:
             return date.fromisoformat(self.report_date_var.get().strip())
-        except ValueError:
-            raise ValueError("The report date must be in YYYY-MM-DD format.")
+        except ValueError as exc:
+            raise ValueError(
+                "The report date must be in YYYY-MM-DD format."
+            ) from exc
 
     def _preview_report(self) -> None:
         """Show the report in the text box."""

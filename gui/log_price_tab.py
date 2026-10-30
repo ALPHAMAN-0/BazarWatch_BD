@@ -7,7 +7,7 @@ from datetime import date
 from tkinter import ttk
 
 from analytics import alert_level
-from gui.widgets import handle_error, show_info, level_label
+from gui.widgets import handle_error, level_label, show_info
 
 
 class LogPriceTab(ttk.Frame):

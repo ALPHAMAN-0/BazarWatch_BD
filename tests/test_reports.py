@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from models import PerishableProduct, PriceRecord, Product
-from reports import weekly_report, build_weekly_report, save_weekly_report
+from reports import build_weekly_report, save_weekly_report, weekly_report
 
 
 def days_ago(count: int) -> str:

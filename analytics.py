@@ -23,6 +23,8 @@ from datetime import date, timedelta
 
 import numpy as np
 
+from config import BUDGET_CLOSE_PERCENT, BUDGET_FULL_PERCENT
+
 
 # --- History ----------------------------------------------------------------
 def history_for(record, records: list) -> list:
@@ -310,11 +312,11 @@ def budget_status(spent: float, budget: float) -> tuple[str, str]:
         return "Over budget", f"Over budget by Tk {spent:.2f} (budget Tk 0.00)"
 
     percent = spent / budget * 100
-    if percent <= 90:
+    if percent <= BUDGET_CLOSE_PERCENT:
         return "Within budget", (
             f"Tk {spent:.2f} of Tk {budget:.2f} ({percent:.1f}% of budget)"
         )
-    if percent <= 100:
+    if percent <= BUDGET_FULL_PERCENT:
         return "Close to budget", (
             f"Tk {spent:.2f} of Tk {budget:.2f} ({percent:.1f}% of budget)"
         )

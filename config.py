@@ -50,6 +50,12 @@ PCT_THRESHOLD_RANGE = (1.0, 200.0)
 MIN_HISTORY_RANGE = (2, 50)
 RECENT_DAYS_RANGE = (1, 90)
 
+# How a basket total is compared with the weekly budget: up to
+# BUDGET_CLOSE_PERCENT of the budget is "Within budget", up to
+# BUDGET_FULL_PERCENT is "Close to budget", and above that is over.
+BUDGET_CLOSE_PERCENT = 90
+BUDGET_FULL_PERCENT = 100
+
 # --- Starter data -----------------------------------------------------------
 DEFAULT_MARKETS = (
     "Karwan Bazar",

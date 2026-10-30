@@ -81,12 +81,9 @@ class Product:
         return self.perishable
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Product":
+    def from_dict(cls, data: dict) -> Product:
         """Rebuild a product, returning a PerishableProduct when flagged."""
-        if data.get("perishable"):
-            product_cls = PerishableProduct
-        else:
-            product_cls = Product
+        product_cls = PerishableProduct if data.get("perishable") else Product
         reference = data.get("reference_price")
         if reference is not None:
             reference = float(reference)
@@ -178,7 +175,7 @@ class PriceRecord:
         ]
 
     @classmethod
-    def from_row(cls, row: list) -> "PriceRecord":
+    def from_row(cls, row: list) -> PriceRecord:
         return cls(
             record_id=row[0],
             product_id=row[1],
@@ -247,7 +244,7 @@ class User:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "User":
+    def from_dict(cls, data: dict) -> User:
         """Rebuild a user, returning an Admin when the role says admin."""
         user_cls = Admin if data.get("role") == "admin" else User
         return user_cls(

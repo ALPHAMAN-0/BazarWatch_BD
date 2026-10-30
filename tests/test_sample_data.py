@@ -2,7 +2,7 @@
 
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 from analytics import alert_level
@@ -70,7 +70,7 @@ class TestGeneratedFiles(SampleDataTestCase):
     def test_all_records_load_without_warnings(self):
         storage = Storage(self.data_dir)
         products = storage.load_products()
-        records = storage.load_records({p.product_id for p in products})
+        storage.load_records({p.product_id for p in products})
         self.assertEqual(storage.warnings, [])
 
 
@@ -144,7 +144,7 @@ class TestPlantedSpike(SampleDataTestCase):
             and r.market == "Karwan Bazar"
             and r.date == self.end_date.isoformat()
         )
-        level, z_value, pct_value = alert_level(
+        level, _z_value, pct_value = alert_level(
             spike, manager.records, manager.products, manager.settings
         )
         self.assertEqual(level, "Watch")
@@ -160,7 +160,7 @@ class TestPlantedSpike(SampleDataTestCase):
             and r.market == "Karwan Bazar"
             and r.date == self.end_date.isoformat()
         )
-        level, z_value, pct_value = alert_level(
+        level, _z_value, pct_value = alert_level(
             spike, manager.records, manager.products, manager.settings
         )
         self.assertEqual(level, "Spike")

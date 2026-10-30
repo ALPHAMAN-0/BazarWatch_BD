@@ -23,8 +23,9 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-import config
 import numpy as np
+
+import config
 from auth import hash_password
 from models import PerishableProduct, PriceRecord, Product, User
 from storage import Storage
@@ -80,6 +81,9 @@ NOISE = {
 # The planted spike: this much above the normal onion price.
 SPIKE_FACTOR = 1.45
 
+# How likely a product is to be skipped in a given market in a given week.
+SKIP_CHANCE = 0.12
+
 # The spike is measured against the generated history rather than the base
 # price, so it stays clearly above the noise whatever the random draw gives.
 SPIKE_Z_HEADROOM = 2.8
@@ -126,7 +130,7 @@ def build_records(rng: random.Random, end_date: date, markets: list[str]):
             noise = NOISE.get(product_id, 0.05)
             # Not every product is priced in every market in every week.
             for market in markets:
-                if rng.random() < 0.12:
+                if rng.random() < SKIP_CHANCE:
                     continue
                 factor = MARKET_FACTORS.get(market, 1.0)
                 price = base_price * factor * _drift(rng, WEEKS - week_index)
@@ -135,9 +139,9 @@ def build_records(rng: random.Random, end_date: date, markets: list[str]):
                 if price <= 0:
                     continue
                 counter += 1
-                day = week_start + timedelta(days=rng.randint(0, 6))
-                if day > end_date:
-                    day = end_date
+                day = min(
+                    week_start + timedelta(days=rng.randint(0, 6)), end_date
+                )
                 # Leave the planted spike's slot free.
                 if (product_id, market, day.isoformat()) == spike_key:
                     day = day - timedelta(days=1)

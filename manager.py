@@ -8,9 +8,10 @@ that would fail.
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import config
+from analytics import alert_level
 from auth import hash_password, verify_password
 from models import Admin, PerishableProduct, PriceRecord, Product, User
 from storage import Storage
@@ -230,7 +231,7 @@ class BazarManager:
 
     def records_per_user(self) -> dict[str, int]:
         """How many records each username has logged."""
-        counts: dict[str, int] = {name: 0 for name in self.users}
+        counts: dict[str, int] = dict.fromkeys(self.users, 0)
         for record in self.records:
             counts[record.added_by] = counts.get(record.added_by, 0) + 1
         return counts
@@ -583,13 +584,9 @@ class BazarManager:
 
     def alert_level_for(self, record: PriceRecord):
         """The alert level of a record.  Implemented in analytics."""
-        from analytics import alert_level
-
         return alert_level(record, self.records, self.products, self.settings)
 
 
 def _days(count: int):
     """A timedelta of ``count`` days (kept in one place for readability)."""
-    from datetime import timedelta
-
     return timedelta(days=count)

@@ -8,7 +8,7 @@ if the rule does not allow it.
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import simpledialog, ttk
 
 import config
 from gui.widgets import (
@@ -141,8 +141,6 @@ class UsersSubTab(ttk.Frame):
         if not username:
             show_info(self, "Please select a member first.")
             return
-        from tkinter import simpledialog
-
         new_password = simpledialog.askstring(
             "Reset password",
             f"New password for '{username}' (at least 6 characters):",
@@ -329,8 +327,6 @@ class ProductsSubTab(ttk.Frame):
         if not product_id:
             show_info(self, "Please select a product first.")
             return
-        from tkinter import simpledialog
-
         product = self.manager.products.get(product_id)
         current = (
             f"{product.reference_price:.2f}" if product and product.reference_price else ""

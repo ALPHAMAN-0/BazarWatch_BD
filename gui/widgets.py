@@ -10,9 +10,17 @@ import logging
 import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
+from typing import Literal
 
 import config
 from validators import BazarError
+
+# The anchors Tkinter accepts for a column.
+Anchor = Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"]
+
+# One column of an AlertTable: the key used in the tree, the heading
+# shown to the user, the anchor and the width in pixels.
+ColumnDef = tuple[str, str, Anchor, int]
 
 # -- Colours -----------------------------------------------------------------
 # Spike is red, Watch is amber, Normal is plain.
@@ -120,9 +128,9 @@ class AlertTable(ttk.Frame):
     follows the alert level of the record.
     """
 
-    def __init__(self, parent, columns: list[tuple[str, str, int]], height: int = 10,
+    def __init__(self, parent, columns: list[ColumnDef], height: int = 10,
                  **kwargs):
-        """``columns`` is a list of ``(heading, anchor, width)`` tuples.
+        """``columns`` is a list of ``(key, heading, anchor, width)`` tuples.
 
         ``height`` is the number of rows the table shows before it scrolls.
         """

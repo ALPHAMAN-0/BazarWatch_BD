@@ -12,7 +12,7 @@ class TestHashPassword(unittest.TestCase):
         self.assertTrue(digest)
 
     def test_hash_is_not_the_plain_password(self):
-        salt, digest = hash_password("secret123")
+        _salt, digest = hash_password("secret123")
         self.assertNotEqual(digest, "secret123")
 
     def test_hash_is_not_the_salt(self):

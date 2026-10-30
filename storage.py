@@ -18,6 +18,7 @@ File rules (see plan section 8):
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 import os
@@ -32,7 +33,14 @@ from models import PriceRecord, Product, User
 class Storage:
     """Loads and saves the five data files in one directory."""
 
-    RECORD_HEADER = ["record_id", "product_id", "market", "date", "price", "added_by"]
+    RECORD_HEADER = (
+        "record_id",
+        "product_id",
+        "market",
+        "date",
+        "price",
+        "added_by",
+    )
 
     def __init__(self, data_dir: Path | str):
         self.data_dir = Path(data_dir)
@@ -65,14 +73,15 @@ class Storage:
             self._write_json(path, default)
             return json.loads(json.dumps(default))
         try:
-            with open(path, "r", encoding="utf-8") as handle:
+            with open(path, encoding="utf-8") as handle:
                 return json.load(handle)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             backup = path.with_name(f"{path.name}.corrupt-{datetime.now():%Y%m%d-%H%M%S}")
-            try:
+            # If the file cannot be moved aside, carry on: the defaults
+            # are still written below, and the warning tells the user
+            # what happened.
+            with contextlib.suppress(OSError):
                 shutil.move(str(path), str(backup))
-            except OSError:
-                pass
             self.warnings.append(
                 f"{path.name} was corrupt ({exc}); it was renamed to "
                 f"{backup.name} and defaults were loaded."
@@ -214,7 +223,7 @@ class Storage:
         seen_ids: set[str] = set()
         problems: list[str] = []
 
-        with open(self.records_file, "r", encoding="utf-8", newline="") as handle:
+        with open(self.records_file, encoding="utf-8", newline="") as handle:
             rows = list(csv.reader(handle))
 
         if not rows:
@@ -222,7 +231,7 @@ class Storage:
 
         start = 0
         header = [cell.strip() for cell in rows[0]]
-        if header == self.RECORD_HEADER:
+        if header == list(self.RECORD_HEADER):
             start = 1
 
         for offset, row in enumerate(rows[start:], start=start + 1):

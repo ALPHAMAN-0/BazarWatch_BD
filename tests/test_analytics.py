@@ -146,7 +146,7 @@ class TestAlertLevel(unittest.TestCase):
     limit of 2.5.  That is what makes the perishable override testable.
     """
 
-    HISTORY = [30, 35, 40, 45, 50, 35]
+    HISTORY = (30, 35, 40, 45, 50, 35)
 
     def make_history(self, prices=None):
         """A history of prices, then a record that jumps."""
@@ -181,7 +181,7 @@ class TestAlertLevel(unittest.TestCase):
     def test_watch_when_only_the_z_rule_fires(self):
         records = self.make_history()
         record = make_record("ONION", 100, 0, record_id="R99999")
-        level, z, pct = alert_level(
+        level, _z, pct = alert_level(
             record, records, {"ONION": make_product()}, make_settings()
         )
         self.assertEqual(level, "Watch")
@@ -203,7 +203,7 @@ class TestAlertLevel(unittest.TestCase):
     def test_no_reference_means_at_most_watch(self):
         records = self.make_history()
         record = make_record("ONION", 100, 0, record_id="R99999")
-        level, z, pct = alert_level(
+        level, _z, pct = alert_level(
             record, records, {"ONION": make_product()}, make_settings()
         )
         self.assertEqual(level, "Watch")
@@ -212,7 +212,7 @@ class TestAlertLevel(unittest.TestCase):
     def test_too_little_history_means_no_z_score(self):
         records = self.make_history([40, 41])
         record = make_record("ONION", 100, 0, record_id="R99999")
-        level, z, pct = alert_level(
+        level, z, _pct = alert_level(
             record, records, {"ONION": make_product()}, make_settings()
         )
         self.assertIsNone(z)
@@ -222,7 +222,7 @@ class TestAlertLevel(unittest.TestCase):
         # Exactly min_history (5) earlier records gives a z-score.
         records = self.make_history([40, 41, 39, 40, 42])
         record = make_record("ONION", 100, 0, record_id="R99999")
-        level, z, pct = alert_level(
+        _level, z, _pct = alert_level(
             record, records, {"ONION": make_product()}, make_settings()
         )
         self.assertIsNotNone(z)
@@ -230,7 +230,7 @@ class TestAlertLevel(unittest.TestCase):
     def test_zero_standard_deviation_means_no_z_score(self):
         records = self.make_history([40, 40, 40, 40, 40])
         record = make_record("ONION", 100, 0, record_id="R99999")
-        level, z, pct = alert_level(
+        level, z, _pct = alert_level(
             record, records, {"ONION": make_product()}, make_settings()
         )
         self.assertIsNone(z)
@@ -240,7 +240,7 @@ class TestAlertLevel(unittest.TestCase):
         # z = 2.15 is above the normal limit of 2.0.
         records = self.make_history()
         record = make_record("ONION", 55, 0, record_id="R99999")
-        level, z, pct = alert_level(
+        level, z, _pct = alert_level(
             record, records, {"ONION": make_product()}, make_settings()
         )
         self.assertEqual(level, "Watch")
@@ -252,7 +252,7 @@ class TestAlertLevel(unittest.TestCase):
         records = self.make_history()
         record = make_record("ONION", 55, 0, record_id="R99999")
         product = make_product(perishable=True)
-        level, z, pct = alert_level(
+        level, _z, _pct = alert_level(
             record, records, {"ONION": product}, make_settings()
         )
         self.assertEqual(level, "Normal")
@@ -262,7 +262,7 @@ class TestAlertLevel(unittest.TestCase):
         records = self.make_history()
         record = make_record("ONION", 58, 0, record_id="R99999")
         product = make_product(perishable=True)
-        level, z, pct = alert_level(
+        level, _z, _pct = alert_level(
             record, records, {"ONION": product}, make_settings()
         )
         self.assertEqual(level, "Watch")
@@ -287,7 +287,7 @@ class TestAlertLevel(unittest.TestCase):
     def test_missing_product_gives_normal(self):
         records = self.make_history()
         record = make_record("ONION", 100, 0, record_id="R99999")
-        level, z, pct = alert_level(record, records, {}, make_settings())
+        level, _z, _pct = alert_level(record, records, {}, make_settings())
         self.assertEqual(level, "Normal")
 
 
@@ -319,7 +319,7 @@ class TestCheapestMarket(unittest.TestCase):
             make_record("ONION", 10, -5, market="Karwan Bazar"),
             make_record("ONION", 45, 1, market="Shwapno", record_id="R00002"),
         ]
-        market, average = cheapest_market(
+        market, _average = cheapest_market(
             "ONION", records, ["Karwan Bazar", "Shwapno"], 14
         )
         self.assertEqual(market, "Shwapno")
@@ -345,12 +345,12 @@ class TestCheapestMarket(unittest.TestCase):
         self.assertIsNone(average)
 
     def test_no_records_at_all_returns_none(self):
-        market, average = cheapest_market("ONION", [], ["Karwan Bazar"], 14)
+        market, _average = cheapest_market("ONION", [], ["Karwan Bazar"], 14)
         self.assertIsNone(market)
 
     def test_market_without_data_is_skipped(self):
         records = [make_record("ONION", 45, 1, market="Shwapno")]
-        market, average = cheapest_market(
+        market, _average = cheapest_market(
             "ONION", records, ["Karwan Bazar", "Shwapno"], 14
         )
         self.assertEqual(market, "Shwapno")
@@ -493,7 +493,7 @@ class TestBudgetStatus(unittest.TestCase):
         self.assertIn("100", message)
 
     def test_close_to_budget(self):
-        status, message = budget_status(950.0, 1000.0)
+        status, _message = budget_status(950.0, 1000.0)
         self.assertEqual(status, "Close to budget")
 
     def test_over_budget(self):
@@ -504,23 +504,23 @@ class TestBudgetStatus(unittest.TestCase):
     def test_exactly_at_budget_is_close(self):
         # The plan puts 90-100% in the "Close to budget" band, so spending
         # exactly the whole budget lands there, not in "Within budget".
-        status, message = budget_status(1000.0, 1000.0)
+        status, _message = budget_status(1000.0, 1000.0)
         self.assertEqual(status, "Close to budget")
 
     def test_exactly_ninety_percent_is_within(self):
-        status, message = budget_status(900.0, 1000.0)
+        status, _message = budget_status(900.0, 1000.0)
         self.assertEqual(status, "Within budget")
 
     def test_just_over_ninety_percent_is_close(self):
-        status, message = budget_status(901.0, 1000.0)
+        status, _message = budget_status(901.0, 1000.0)
         self.assertEqual(status, "Close to budget")
 
     def test_zero_budget_with_zero_total(self):
-        status, message = budget_status(0.0, 0.0)
+        status, _message = budget_status(0.0, 0.0)
         self.assertEqual(status, "Within budget")
 
     def test_zero_budget_with_spend(self):
-        status, message = budget_status(50.0, 0.0)
+        status, _message = budget_status(50.0, 0.0)
         self.assertEqual(status, "Over budget")
 
 

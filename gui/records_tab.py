@@ -232,9 +232,9 @@ class RecordsTab(ttk.Frame):
         """Reload the table with the current filters."""
         show_bn = self.manager.show_bangla_names()
 
-        self.product_box["values"] = ("",) + tuple(sorted(self.manager.products))
-        self.market_box["values"] = ("",) + tuple(self.manager.markets())
-        self.user_box["values"] = ("",) + tuple(sorted(self.manager.users))
+        self.product_box["values"] = ("", *sorted(self.manager.products))
+        self.market_box["values"] = ("", *self.manager.markets())
+        self.user_box["values"] = ("", *sorted(self.manager.users))
 
         try:
             results = self.manager.filter_records(

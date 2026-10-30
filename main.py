@@ -16,7 +16,9 @@ import sys
 def main() -> int:
     """Start the graphical application."""
     try:
-        from gui.app import BazarApp
+        # The import is deferred on purpose: a missing tkinter is caught
+        # below and explained, instead of showing a raw traceback.
+        from gui.app import BazarApp  # noqa: PLC0415
     except ImportError as exc:
         # A missing tkinter is the usual cause, and it is worth explaining
         # rather than showing a raw traceback.

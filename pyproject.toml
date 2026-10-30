@@ -1,0 +1,48 @@
+[project]
+name = "bazarwatch-bd"
+version = "1.0.0"
+description = "A household price tracker and basket optimiser for everyday essentials."
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+# The default rule set plus the checks that catch real mistakes.
+select = ["E", "F", "W", "I", "UP", "B", "S", "RUF", "PL", "BLE", "C4", "SIM"]
+ignore = [
+    # A blind `except Exception` is deliberate in the interface: an
+    # unexpected error must never close the app.  `handle_error` in
+    # gui/widgets.py logs the traceback and shows the user a message.
+    "BLE001",
+    # Line length is handled by the formatter, not the linter.
+    "E501",
+    # The data classes take one argument per field on purpose, so they
+    # read like the tables they map to.  The same goes for the report
+    # builder, which takes the whole data set it reports on.
+    "PLR0913",
+    "PLR0917",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The tests deliberately unpack values they do not use, to keep the
+# shape of the returned tuples visible.  The demo passwords are part of
+# the test fixture, not a secret.
+"tests/*" = ["RUF059", "S101", "S110", "S107"]
+# The GUI modules catch broad exceptions on purpose, for the reason
+# described above.  A `refresh` method fills one table per section, so
+# it has a branch per section.
+"gui/*" = ["BLE001", "PLR0912", "PLR0915"]
+# The sample data is illustrative, not secret.  A seeded pseudo-random
+# generator is exactly what is wanted here: the same data every run.
+"generate_sample_data.py" = ["S311"]
+# The weekly report is one long function that reads top to bottom, in
+# the same order as the report it produces.
+"reports.py" = ["PLR0912", "PLR0915"]
+# `_record_problem` returns one reason per problem it can name.
+"storage.py" = ["PLR0911"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["analytics", "auth", "config", "manager", "models", "reports", "storage", "validators"]

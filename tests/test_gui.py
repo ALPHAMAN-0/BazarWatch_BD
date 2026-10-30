@@ -9,11 +9,13 @@ Run them with:
     python -m unittest tests.test_gui -v
 """
 
+import contextlib
 import tempfile
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
-from unittest import mock
+
+import config as config_module
 
 try:
     import tkinter as tk
@@ -26,12 +28,11 @@ except Exception:  # pragma: no cover - depends on the machine
     TK_AVAILABLE = False
 
 if TK_AVAILABLE:
-    from gui.app import BazarApp
-    from manager import BazarManager
-
     # The message boxes are modal, so they would block the test run.  They
     # are replaced with harmless stubs that record what was shown.
     from gui import widgets
+    from gui.app import BazarApp
+    from manager import BazarManager
 
     _SHOWN = {"errors": [], "infos": [], "warnings": [], "confirm": True}
 
@@ -67,8 +68,8 @@ if TK_AVAILABLE:
     import gui.admin_tab
     import gui.app
     import gui.basket_tab
-    import gui.login_view
     import gui.log_price_tab
+    import gui.login_view
     import gui.records_tab
     import gui.stats_tab
 
@@ -104,10 +105,10 @@ class GuiTestCase(unittest.TestCase):
         self.app.update_idletasks()
 
     def tearDown(self):
-        try:
+        # The window may already be gone, so a failure here is not
+        # interesting.
+        with contextlib.suppress(Exception):
             self.app.destroy()
-        except Exception:
-            pass
         self._tmp.cleanup()
 
     def _login(self, username="admin", password="admin123"):
@@ -396,8 +397,6 @@ class TestMenuActions(GuiTestCase):
     def test_the_weekly_report_can_be_generated(self):
         self._login()
         with tempfile.TemporaryDirectory() as tmp:
-            import config as config_module
-
             original = config_module.REPORTS_DIR
             config_module.REPORTS_DIR = Path(tmp)
             try:

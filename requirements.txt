@@ -1,0 +1,5 @@
+# BazarWatch BD
+#
+# Tkinter ships with Python itself, so there is nothing to install for it.
+# On Debian or Ubuntu install it with: sudo apt install python3-tk
+numpy>=1.24

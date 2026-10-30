@@ -5,7 +5,6 @@ Every test uses a temp folder, so the real data/ directory is never touched.
 
 import csv
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
