@@ -920,5 +920,126 @@ class TestMenuActions(GuiTestCase):
                 config_module.REPORTS_DIR = original
 
 
+class TestBasketBudgetSurvivesARebuild(GuiTestCase):
+    """The budget field belongs to the user until they save it.
+
+    Adding or removing an item rebuilds the table, and the rebuild must
+    not throw away a budget the user has typed but not saved yet.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._login("rafi", "rafi123")
+        self.tab = self.app._tabs["My Basket"]
+
+    def _choose(self, product_id):
+        self.tab.product_var.set(self.manager.product_label(product_id))
+
+    def test_adding_an_item_keeps_the_typed_budget(self):
+        self.tab.budget_var.set("500")
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        self.assertEqual(self.tab.budget_var.get(), "500")
+
+    def test_removing_an_item_keeps_the_typed_budget(self):
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        self.tab.budget_var.set("500")
+        self.tab._remove_item()
+        self.assertEqual(self.tab.budget_var.get(), "500")
+
+    def test_a_saved_budget_is_still_shown_after_an_item_is_added(self):
+        self.tab.budget_var.set("500")
+        self.tab._save_budget()
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        self.assertEqual(self.tab.budget_var.get(), "500")
+
+    def test_the_saved_budget_is_not_changed_by_typing(self):
+        self.tab.budget_var.set("500")
+        self.tab._save_budget()
+        self.tab.budget_var.set("900")
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        self.assertEqual(self.manager.get_basket("rafi")["budget"], 500.0)
+
+
+class TestDoubleClickingABasketRowRemovesIt(GuiTestCase):
+    """Double-clicking a basket row removes that item.
+
+    The row is identified by the product ID, not by the name shown in
+    the first column, because that is what the basket is keyed on.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._login("rafi", "rafi123")
+        self.tab = self.app._tabs["My Basket"]
+
+    def _choose(self, product_id):
+        self.tab.product_var.set(self.manager.product_label(product_id))
+
+    def test_double_clicking_the_row_removes_the_item(self):
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 1)
+
+        # Select the row the way a double-click does, then use the id
+        # the table hands back.
+        rows = self.tab.items_table.tree.get_children()
+        self.tab.items_table.tree.selection_set(rows[0])
+        chosen = self.tab.items_table.selected_id()
+        self.tab._remove_by_id(chosen)
+
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 0)
+        self.assertNotIn("ONION", self.manager.get_basket("rafi")["items"])
+
+    def test_the_selected_id_is_the_product_id(self):
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        rows = self.tab.items_table.tree.get_children()
+        self.tab.items_table.tree.selection_set(rows[0])
+        self.assertEqual(self.tab.items_table.selected_id(), "ONION")
+
+    def test_the_display_name_is_not_used_as_the_id(self):
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        rows = self.tab.items_table.tree.get_children()
+        values = self.tab.items_table.tree.item(rows[0], "values")
+        self.assertNotEqual(values[0], "ONION")
+
+
+class TestRemovingAMarketClearsTheStaleChoice(GuiTestCase):
+    """The market dropdown offers the markets that still exist.
+
+    When the Admin removes the market that is chosen, the dropdown must
+    not keep offering it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self._login("rafi", "rafi123")
+        self.tab = self.app._tabs["Log Price"]
+
+    def test_a_removed_market_is_not_offered_after_a_refresh(self):
+        self.tab.market_var.set("Shwapno")
+        self.manager.remove_market("Shwapno")
+        self.tab.refresh_choices()
+        self.assertNotIn("Shwapno", self.tab.market_box["values"])
+
+    def test_the_chosen_market_is_one_that_still_exists(self):
+        self.manager.remove_market("Shwapno")
+        self.tab.refresh_choices()
+        markets = list(self.tab.market_box["values"])
+        self.assertIn(self.tab.market_var.get(), markets)
+
+
 if __name__ == "__main__":
     unittest.main()
