@@ -45,6 +45,9 @@ Admin account instead of showing the login screen.
 Pick a product, a market and a date, type the price, and save. The app immediately tells
 you whether the price is **Normal**, a **Watch** or a **Spike**.
 
+The product dropdown carries the product ID in brackets — `Rice (চাল) [RICE1]` — so two
+products that share a name can still be told apart.
+
 ### Search and filter records
 The Records tab searches across the product, market and date, and filters by product,
 market, who logged the price, alert level, and a date range. Records can be edited by
@@ -68,6 +71,9 @@ were not priced this week. Save it to `reports/weekly_report_YYYY-MM-DD.txt`.
 ### Admin tab
 Manage users, products, markets and the alert thresholds. Only an Admin sees this tab,
 and the same check runs inside the manager, not just in the interface.
+
+A product, market or setting changed here reaches the other tabs straight away, so the
+Log Price and basket dropdowns never offer a stale list.
 
 ---
 
@@ -141,9 +147,18 @@ with `hmac.compare_digest`.
 python -m unittest discover -s tests -v
 ```
 
-345 tests. They all use temporary folders, so your real data is never touched. The
+444 tests. They all use temporary folders, so your real data is never touched. The
 interface tests drive the real Tk widgets and are skipped automatically when there is no
 display available (a headless CI machine).
+
+There is also a script that checks the app against the project plan, section by section,
+by driving the real interface:
+
+```bash
+python verify_plan.py
+```
+
+It reports `105 of 105 checks passed` when everything in the plan holds.
 
 ---
 

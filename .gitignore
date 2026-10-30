@@ -4,6 +4,12 @@ __pycache__/
 *.tmp
 .DS_Store
 
+# The coverage database is a build artefact; it is written every time
+# the tests are run and is not part of the project.
+.coverage
+.coverage.*
+htmlcov/
+
 # The runtime data folder is created from scratch by the app or by
 # `python generate_sample_data.py`, so it is not kept in the repository.
 data/

@@ -143,6 +143,34 @@ window.
 | **Result** | `105 of 105 checks passed.` / `Everything in plan.md checks out.` |
 | **Commit** | `61f98e1` |
 
+### The second review pass — the data layer
+
+A review pass over the storage, manager and config modules found five
+defects that all involve data silently going missing or settings quietly
+changing. Each fix has a test that fails without it.
+
+| Finding | Test | Before | After |
+|---|---|---|---|
+| A record naming a product that is not in the catalogue was dropped and never written back, so the history was destroyed on the next save | `test_the_orphan_row_is_still_in_the_file_after_a_save` | the row was gone from the CSV | the row is kept and the reason is reported |
+| Removing a market compared the name one way and filtered it another, so a different case did nothing | `test_a_market_can_be_removed_with_a_different_case` | the market stayed | the market is removed |
+| Two corrupt saves of the same file in one second overwrote each other's backup | `test_two_corrupt_files_get_two_different_names` | one backup, the other lost | two backups, each with its own content |
+| A hand-edited settings file with a text threshold crashed every alert computation | `test_a_text_threshold_falls_back_to_the_default` | `ValueError` | the default is used and the bad value is reported |
+| Adding a market permanently changed the default settings for everybody | `test_the_default_markets_are_unchanged_after_adding_one` | `DEFAULT_SETTINGS["markets"]` grew | the defaults stay as they were |
+| A count setting of `2.4` was quietly rounded down to `2` | `test_a_fractional_count_is_refused` | `2` | `ValidationError` |
+| **Commits** | `e12cce4` (RED) | | `9d45a4c` (GREEN) |
+
+### The third review pass — the interface
+
+A review pass over the GUI modules found three more defects that a user
+would hit within a minute.
+
+| Finding | Test | Before | After |
+|---|---|---|---|
+| Typing a budget and then adding an item threw the budget away | `test_the_budget_survives_a_rebuild` | the field was empty again | the unsaved budget is left alone |
+| Double-clicking a basket row did nothing, because the table handed back the display name instead of the product ID | `test_double_clicking_a_basket_row_removes_it` | the item stayed | the item is removed |
+| Removing a market left it in the Log Price dropdown | `test_the_stale_market_is_dropped_from_the_dropdown` | the dropdown kept it | the dropdown is rebuilt |
+| **Commits** | `7ea24d3` (RED) | | `c752615` (GREEN) |
+
 ## 4. Test specification
 
 | # | What is guaranteed | Test file or command | Type | Result |
@@ -192,6 +220,15 @@ window.
 | 43 | The Bangla-name switch reaches the other tabs | `tests/test_gui.py` | E2E | PASS |
 | 44 | The weekly report can be generated from the File menu | `tests/test_gui.py` | E2E | PASS |
 | 45 | Every requirement in plan.md holds | `python3 verify_plan.py` | E2E | PASS (105/105) |
+| 46 | A record naming an unknown product is kept in the file and reported, and never reaches the records list | `tests/test_review_round_two.py` | integration | PASS |
+| 47 | A market can be removed with any capitalisation, and a market that is not there is refused | `tests/test_review_round_two.py` | integration | PASS |
+| 48 | Two corrupt saves of the same file produce two different backups, each keeping its own content | `tests/test_review_round_two.py` | integration | PASS |
+| 49 | A non-numeric threshold falls back to the default, is reported, and the alert code still runs | `tests/test_review_round_two.py` | unit | PASS |
+| 50 | A fractional count setting is refused, and a whole number written as a float is kept | `tests/test_review_round_two.py` | unit | PASS |
+| 51 | Adding a market leaves the default settings, and a fresh copy, exactly as they were | `tests/test_review_round_two.py` | integration | PASS |
+| 52 | A typed budget survives a rebuild of the basket | `tests/test_gui.py` | E2E | PASS |
+| 53 | Double-clicking a basket row removes that item | `tests/test_gui.py` | E2E | PASS |
+| 54 | Removing a market drops it from the Log Price dropdown | `tests/test_gui.py` | E2E | PASS |
 
 ## 5. Coverage
 
@@ -202,31 +239,49 @@ python3 -m coverage run --source=. -m unittest discover -s tests
 python3 -m coverage report
 ```
 
-Result: **86%** over the whole project — above the 80% target.
+Result: **87%** over the application code — above the 80% target.
+
+The number above is the application code on its own, measured with
+
+```
+python3 -m coverage run --source=. --omit="tests/*,verify_plan.py" \
+    -m unittest discover -s tests -t .
+python3 -m coverage report --omit="tests/*,verify_plan.py"
+```
+
+which gives `2663` statements, `356` missed, **87%**. The test files and
+`verify_plan.py` are left out of that figure on purpose: the tests are the
+thing being measured, and `verify_plan.py` is a one-off script that is
+run, not unit-tested. Including them gives 77%, because `verify_plan.py`
+alone is 458 statements at 0%.
 
 | Module | Coverage | Module | Coverage |
 |---|---|---|---|
 | `analytics.py` | 100% | `gui/basket_tab.py` | 89% |
 | `config.py` | 100% | `gui/dashboard_tab.py` | 95% |
-| `gui/records_tab.py` | 91% | `gui/log_price_tab.py` | 95% |
+| `gui/records_tab.py` | 91% | `gui/log_price_tab.py` | 94% |
 | `gui/stats_tab.py` | 90% | `gui/admin_tab.py` | 80% |
 | `manager.py` | 92% | `gui/app.py` | 74% |
-| `models.py` | 86% | `gui/login_view.py` | 78% |
+| `models.py` | 87% | `gui/login_view.py` | 78% |
 | `reports.py` | 89% | `gui/widgets.py` | 79% |
-| `storage.py` | 85% | `validators.py` | 89% |
+| `storage.py` | 87% | `validators.py` | 89% |
 | `auth.py` | 89% | `generate_sample_data.py` | 76% |
 
 ### Known gaps
 
-- `main.py` (0%) and `verify_plan.py` (0%) are entry points. `main.py` only
-  starts the app, and `verify_plan.py` is a one-off verification script
-  that the plan check exercises instead.
+- `main.py` (0%) is an entry point. It only starts the app; the app itself
+  is covered by the GUI tests.
+- `verify_plan.py` (0%) is a one-off verification script. It is run by
+  `python3 verify_plan.py`, which drives the real GUI and reports 105 of
+  105 checks passing; it is not part of the unit-test suite.
 - `gui/app.py` at 74%: the untested lines are the window teardown and the
   `Exit` menu handler.
 - `gui/login_view.py` at 78%: the untested lines are the message-box
   branches of the error handlers, which need a modal dialog to reach.
 - `generate_sample_data.py` at 76%: the untested lines are the `--force`
   refusal path and a few of the random-walk branches.
+- `storage.py` at 87%: the untested lines are the corrupt-file branches of
+  the loaders for the files the plan does not exercise.
 
 None of the gaps hide a rule from the plan. Every rule in §5 and every
 permission in §3 is covered.
@@ -250,6 +305,12 @@ evidence stays visible in the history:
 | `fbf948f` | GREEN — the dropdown, report and date-filter fixes |
 | `fd40964` | GREEN — the settings-type and missing-setting fixes |
 | `61f98e1` | The plan verification script |
+| `0b9f46a` | This evidence report |
+| `8489008` | The plan script made to pass lint and the type checker |
+| `e12cce4` | RED — the second review pass (the data layer) |
+| `9d45a4c` | GREEN — the second review pass |
+| `7ea24d3` | RED — the third review pass (the interface) |
+| `c752615` | GREEN — the third review pass |
 
 The RED messages quoted in section 3 are the actual output of the failing
 runs, not reconstructions. Where a fix was written before its test — the
@@ -260,10 +321,10 @@ passed again once the fix was restored.
 
 ### Summary
 
-- **RED validations:** 3 (window layout, the three interface defects, the review-pass findings)
-- **GREEN validations:** 6 module checkpoints plus the review passes
-- **Tests:** 412 passing
-- **Coverage:** 86%
+- **RED validations:** 6 (window layout, the three interface defects, the first review pass, the second review pass, the third review pass)
+- **GREEN validations:** 6 module checkpoints plus the three review passes
+- **Tests:** 444 passing
+- **Coverage:** 87% over the application code
 - **Plan checks:** 105 of 105 passing
 - **Lint:** ruff, all checks passed
-- **Types:** mypy, no issues in 32 source files
+- **Types:** mypy, no issues in 34 source files
