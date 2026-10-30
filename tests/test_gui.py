@@ -260,6 +260,345 @@ class TestRecordsTab(GuiTestCase):
         self.assertEqual(len(tab.table.tree.get_children()), 0)
 
 
+class TestRecordsTabActions(GuiTestCase):
+    """Editing, deleting and filtering the records."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("rafi", "rafi123")
+        self.yesterday = (date.today() - timedelta(days=1)).isoformat()
+        self.record = self.manager.add_record(
+            "ONION", "Karwan Bazar", self.yesterday, 45.0
+        )
+        self.tab = self.app._tabs["Records"]
+        self.tab.refresh()
+
+    def _select_the_record(self):
+        """Select the only record in the table."""
+        rows = self.tab.table.tree.get_children()
+        self.tab.table.tree.selection_set(rows[0])
+        return rows[0]
+
+    def test_clearing_the_filters_shows_everything_again(self):
+        self.tab.search_var.set("onion")
+        self.tab.from_var.set(self.yesterday)
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+        self.tab._clear_filters()
+        self.assertEqual(self.tab.search_var.get(), "")
+        self.assertEqual(self.tab.from_var.get(), "")
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+
+    def test_the_product_filter_narrows_the_table(self):
+        self.tab.product_var.set("ONION")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+        self.tab.product_var.set("RICE")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 0)
+
+    def test_the_market_filter_narrows_the_table(self):
+        self.tab.market_var.set("Karwan Bazar")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+        self.tab.market_var.set("Shwapno")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 0)
+
+    def test_the_logged_by_filter_narrows_the_table(self):
+        self.tab.user_var.set("rafi")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+        self.tab.user_var.set("admin")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 0)
+
+    def test_the_level_filter_narrows_the_table(self):
+        self.tab.level_var.set("Normal")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+        self.tab.level_var.set("Spike")
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 0)
+
+    def test_the_date_range_filter_narrows_the_table(self):
+        self.tab.from_var.set(self.yesterday)
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 1)
+        self.tab.from_var.set((date.today() + timedelta(days=5)).isoformat())
+        self.tab.refresh()
+        self.assertEqual(len(self.tab.table.tree.get_children()), 0)
+
+    def test_editing_without_a_selection_shows_a_message(self):
+        self.tab.table.tree.selection_remove(*self.tab.table.tree.get_children())
+        self.tab._edit_selected()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_the_edit_dialog_saves_the_new_price(self):
+        record_id = self._select_the_record()
+        self.tab._edit_selected(record_id)
+        # The dialog is modal, so it is driven directly.
+        from gui.records_tab import EditRecordDialog
+
+        dialog = EditRecordDialog(
+            self.app, self.manager, self.manager.get_record(record_id),
+            self.tab.refresh,
+        )
+        dialog.price_var.set("50")
+        dialog._save()
+        self.assertEqual(self.manager.get_record(record_id).price, 50.0)
+
+    def test_the_edit_dialog_keeps_a_bad_price_on_screen(self):
+        record_id = self._select_the_record()
+        from gui.records_tab import EditRecordDialog
+
+        dialog = EditRecordDialog(
+            self.app, self.manager, self.manager.get_record(record_id),
+            self.tab.refresh,
+        )
+        dialog.price_var.set("not a price")
+        dialog._save()
+        self.assertIn("price", dialog.error_var.get().lower())
+        # The record is unchanged.
+        self.assertEqual(self.manager.get_record(record_id).price, 45.0)
+        dialog.destroy()
+
+    def test_deleting_without_a_selection_shows_a_message(self):
+        self.tab.table.tree.selection_remove(*self.tab.table.tree.get_children())
+        self.tab._delete_selected()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_a_member_cannot_delete_a_record(self):
+        record_id = self._select_the_record()
+        self.tab._delete_selected()
+        self.assertTrue(_SHOWN["infos"])
+        self.assertEqual(len(self.manager.records), 1)
+
+    def test_an_admin_can_delete_a_record(self):
+        self.app._logout()
+        self._login("admin", "admin123")
+        tab = self.app._tabs["Records"]
+        tab.refresh()
+        rows = tab.table.tree.get_children()
+        tab.table.tree.selection_set(rows[0])
+        tab._delete_selected()
+        self.assertEqual(len(self.manager.records), 0)
+        self.assertEqual(len(tab.table.tree.get_children()), 0)
+
+    def test_an_admin_can_edit_any_record(self):
+        self.app._logout()
+        self._login("admin", "admin123")
+        tab = self.app._tabs["Records"]
+        tab.refresh()
+        rows = tab.table.tree.get_children()
+        tab.table.tree.selection_set(rows[0])
+        tab._update_buttons()
+        self.assertEqual(str(tab.edit_button.cget("state")), "normal")
+
+
+class TestLogPriceTabDetails(GuiTestCase):
+    """The details shown next to the Log Price form."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("rafi", "rafi123")
+        self.tab = self.app._tabs["Log Price"]
+
+    def test_the_product_details_are_shown(self):
+        self.tab.product_var.set(self.tab.product_box["values"][0])
+        self.tab._on_product()
+        self.assertTrue(self.tab.detail_var.get())
+
+    def test_a_reference_price_is_shown_when_it_is_set(self):
+        # Only an Admin may set a reference price, so log in as one.
+        self.app._logout()
+        self._login("admin", "admin123")
+        self.manager.set_reference_price("ONION", 40.0)
+        self.tab = self.app._tabs["Log Price"]
+        self.tab.refresh_choices()
+        for name in self.tab.product_box["values"]:
+            if "Onion" in name:
+                self.tab.product_var.set(name)
+                break
+        self.tab._on_product()
+        self.assertIn("40", self.tab.detail_var.get())
+
+    def test_the_form_can_be_cleared(self):
+        self.tab.price_var.set("45")
+        self.tab._clear()
+        self.assertEqual(self.tab.price_var.get(), "")
+        self.assertEqual(self.tab.result_label.cget("text"), "")
+
+    def test_a_saved_record_shows_its_alert_level(self):
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        self.tab.product_var.set(self.tab.product_box["values"][0])
+        self.tab.market_var.set(self.tab.market_box["values"][0])
+        self.tab.date_var.set(yesterday)
+        self.tab.price_var.set("45")
+        self.tab._save()
+        self.assertIn("Normal", self.tab.result_label.cget("text"))
+
+
+class TestStatsTabReport(GuiTestCase):
+    """Previewing and saving the weekly report."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("admin", "admin123")
+        self.tab = self.app._tabs["Statistics & Alerts"]
+
+    def test_the_report_can_be_previewed(self):
+        self.tab._preview_report()
+        text = self.tab.preview.get("1.0", "end")
+        self.assertIn("WEEKLY", text.upper())
+
+    def test_a_bad_report_date_shows_a_message(self):
+        self.tab.report_date_var.set("not a date")
+        self.tab._preview_report()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_a_bad_report_date_is_refused_when_saving(self):
+        self.tab.report_date_var.set("31-12-2026")
+        self.tab._save_report()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_the_report_can_be_saved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            original = config_module.REPORTS_DIR
+            config_module.REPORTS_DIR = Path(tmp)
+            try:
+                self.tab._save_report()
+                files = list(Path(tmp).glob("weekly_report_*.txt"))
+                self.assertEqual(len(files), 1)
+            finally:
+                config_module.REPORTS_DIR = original
+
+    def test_the_statistics_table_has_a_row_per_product(self):
+        rows = self.tab.stats_table.tree.get_children()
+        self.assertEqual(len(rows), len(self.manager.products))
+
+    def test_the_alerts_table_only_holds_alerts(self):
+        for row in self.tab.alerts_table.tree.get_children():
+            level = self.tab.alerts_table.tree.item(row, "values")[0]
+            self.assertIn(level, ("Spike", "Watch"))
+
+
+class TestBasketTabActions(GuiTestCase):
+    """Adding, removing and budgeting."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("rafi", "rafi123")
+        self.tab = self.app._tabs["My Basket"]
+
+    def _choose(self, product_id):
+        """Pick a product in the dropdown."""
+        show_bn = self.manager.show_bangla_names()
+        name = self.manager.products[product_id].display_name(show_bn)
+        self.tab.product_var.set(name)
+
+    def test_adding_an_item_without_a_product_shows_a_message(self):
+        self.tab.product_var.set("")
+        self.tab._add_item()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_an_item_can_be_removed_by_the_dropdown(self):
+        self._choose("ONION")
+        self.tab.quantity_var.set("2")
+        self.tab._add_item()
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 1)
+        self.tab._remove_item()
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 0)
+
+    def test_an_item_can_be_removed_by_double_clicking(self):
+        self._choose("ONION")
+        self.tab._add_item()
+        self.tab._remove_by_id("ONION")
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 0)
+
+    def test_removing_nothing_shows_a_message(self):
+        self.tab.product_var.set("")
+        self.tab._remove_item()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_the_budget_can_be_saved(self):
+        self.tab.budget_var.set("500")
+        self.tab._save_budget()
+        self.assertEqual(self.manager.get_basket("rafi")["budget"], 500.0)
+
+    def test_the_basket_can_be_cleared(self):
+        self._choose("ONION")
+        self.tab._add_item()
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 1)
+        self.tab._clear_basket()
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 0)
+
+    def test_the_basket_is_empty_before_anything_is_added(self):
+        self.assertEqual(len(self.tab.items_table.tree.get_children()), 0)
+
+    def test_the_totals_table_always_has_a_row(self):
+        self._choose("ONION")
+        self.tab._add_item()
+        # With no prices recorded there is no market to total up, but
+        # the table still explains that.
+        self.assertTrue(self.tab.totals_table.tree.get_children())
+
+
+class TestAdminTabActions(GuiTestCase):
+    """The Admin sub-tabs."""
+
+    def setUp(self):
+        super().setUp()
+        self._login("admin", "admin123")
+        self.tab = self.app._tabs["Admin"]
+
+    @staticmethod
+    def _select(table, item_id):
+        """Select the row with the given id."""
+        table.tree.selection_set(item_id)
+
+    def test_a_member_can_be_removed(self):
+        users = self.tab.users_tab
+        self._select(users.table, "rafi")
+        users._remove_member()
+        self.assertNotIn("rafi", self.manager.users)
+
+    def test_removing_without_a_selection_shows_a_message(self):
+        users = self.tab.users_tab
+        users.table.tree.selection_remove(*users.table.tree.get_children())
+        users._remove_member()
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_a_product_can_be_removed(self):
+        products = self.tab.products_tab
+        products.product_id_var.set("MILK")
+        products.name_var.set("Milk powder")
+        products.unit_var.set("kg")
+        products.category_var.set("Grocery")
+        products._add_product()
+        self.assertIn("MILK", self.manager.products)
+        self._select(products.table, "MILK")
+        products._remove_product()
+        self.assertNotIn("MILK", self.manager.products)
+
+    def test_a_market_can_be_removed(self):
+        markets = self.tab.markets_tab
+        markets.market_var.set("Bashundhara")
+        markets._add_market()
+        self.assertIn("Bashundhara", self.manager.markets())
+        self._select(markets.table, "Bashundhara")
+        markets._remove_market()
+        self.assertNotIn("Bashundhara", self.manager.markets())
+
+    def test_the_settings_can_be_reset(self):
+        settings = self.tab.settings_tab
+        settings.vars["z_threshold"].set("3.0")
+        settings._save()
+        self.assertEqual(self.manager.settings["z_threshold"], 3.0)
+        settings._reset()
+        self.assertEqual(self.manager.settings["z_threshold"], 2.0)
+
+
 class TestWindowLayout(GuiTestCase):
     """The window must not steal vertical space from the tables.
 
