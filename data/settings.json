@@ -1,0 +1,14 @@
+{
+  "markets": [
+    "Karwan Bazar",
+    "Mohammadpur Krishi Market",
+    "Shwapno"
+  ],
+  "z_threshold": 2.0,
+  "pct_threshold": 15.0,
+  "perishable_z_threshold": 2.5,
+  "perishable_pct_threshold": 25.0,
+  "min_history": 5,
+  "recent_days": 14,
+  "show_bangla_names": true
+}

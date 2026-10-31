@@ -1,0 +1,262 @@
+record_id,product_id,market,date,price,added_by
+R00001,RICE,Mohammadpur Krishi Market,2026-09-05,56.42,tanvir
+R00002,ONION,Mohammadpur Krishi Market,2026-09-05,33.38,rafi
+R00003,CHILLI,Karwan Bazar,2026-09-05,80.3,sadia
+R00004,CHICKEN,Shwapno,2026-09-05,221.74,tanvir
+R00005,ATTA,Mohammadpur Krishi Market,2026-09-06,72.23,rafi
+R00006,CHICKEN,Mohammadpur Krishi Market,2026-09-06,219.69,sadia
+R00007,OIL,Shwapno,2026-09-07,208.37,sadia
+R00008,SUGAR,Karwan Bazar,2026-09-07,148.18,tanvir
+R00009,GARLIC,Mohammadpur Krishi Market,2026-09-07,104.95,sadia
+R00010,GARLIC,Shwapno,2026-09-07,133.45,rafi
+R00011,CHILLI,Shwapno,2026-09-07,90.09,rafi
+R00012,ATTA,Shwapno,2026-09-08,79.26,tanvir
+R00013,CHICKEN,Karwan Bazar,2026-09-08,224.47,tanvir
+R00014,PANGAS,Shwapno,2026-09-08,449.07,rafi
+R00015,RICE,Karwan Bazar,2026-09-09,60.5,sadia
+R00016,RICE,Shwapno,2026-09-09,58.88,sadia
+R00017,DAL,Shwapno,2026-09-09,144.41,tanvir
+R00018,ONION,Karwan Bazar,2026-09-09,32.99,tanvir
+R00019,DAL,Mohammadpur Krishi Market,2026-09-10,120.96,tanvir
+R00020,SUGAR,Mohammadpur Krishi Market,2026-09-10,139.63,sadia
+R00021,ONION,Shwapno,2026-09-10,34.35,sadia
+R00022,EGG,Mohammadpur Krishi Market,2026-09-10,126.25,tanvir
+R00023,EGG,Shwapno,2026-09-10,152.43,sadia
+R00024,ATTA,Karwan Bazar,2026-09-11,71.49,rafi
+R00025,OIL,Mohammadpur Krishi Market,2026-09-11,180.73,tanvir
+R00026,POTATO,Karwan Bazar,2026-09-11,31.72,tanvir
+R00027,GARLIC,Karwan Bazar,2026-09-11,128.73,rafi
+R00028,CHILLI,Mohammadpur Krishi Market,2026-09-11,84.34,sadia
+R00029,EGG,Karwan Bazar,2026-09-11,138.28,sadia
+R00030,ATTA,Mohammadpur Krishi Market,2026-09-12,69.93,rafi
+R00031,DAL,Shwapno,2026-09-12,143.14,rafi
+R00032,GARLIC,Karwan Bazar,2026-09-12,116.87,sadia
+R00033,CHILLI,Mohammadpur Krishi Market,2026-09-12,44.88,sadia
+R00034,CHICKEN,Karwan Bazar,2026-09-12,239.12,rafi
+R00035,CHICKEN,Mohammadpur Krishi Market,2026-09-12,222.72,tanvir
+R00036,PANGAS,Mohammadpur Krishi Market,2026-09-12,404.29,tanvir
+R00037,DAL,Mohammadpur Krishi Market,2026-09-13,128.57,sadia
+R00038,OIL,Mohammadpur Krishi Market,2026-09-13,185.81,sadia
+R00039,OIL,Shwapno,2026-09-13,217.04,rafi
+R00040,SUGAR,Karwan Bazar,2026-09-13,147.81,sadia
+R00041,ONION,Karwan Bazar,2026-09-13,45.9,rafi
+R00042,GARLIC,Mohammadpur Krishi Market,2026-09-13,120.72,sadia
+R00043,CHILLI,Karwan Bazar,2026-09-13,57.08,rafi
+R00044,RICE,Shwapno,2026-09-14,69.38,tanvir
+R00045,ATTA,Karwan Bazar,2026-09-14,74.97,sadia
+R00046,ONION,Shwapno,2026-09-14,32.89,sadia
+R00047,CHILLI,Shwapno,2026-09-14,71.01,tanvir
+R00048,EGG,Karwan Bazar,2026-09-14,133.23,rafi
+R00049,RICE,Mohammadpur Krishi Market,2026-09-15,57.56,sadia
+R00050,ATTA,Shwapno,2026-09-15,77.54,tanvir
+R00051,DAL,Karwan Bazar,2026-09-15,140.18,rafi
+R00052,SUGAR,Shwapno,2026-09-15,157.84,rafi
+R00053,ONION,Mohammadpur Krishi Market,2026-09-15,38.83,tanvir
+R00054,POTATO,Mohammadpur Krishi Market,2026-09-15,25.47,sadia
+R00055,POTATO,Shwapno,2026-09-16,32.42,rafi
+R00056,PANGAS,Shwapno,2026-09-16,422.09,sadia
+R00057,RICE,Karwan Bazar,2026-09-17,53.72,tanvir
+R00058,OIL,Karwan Bazar,2026-09-17,198.22,rafi
+R00059,SUGAR,Mohammadpur Krishi Market,2026-09-17,138.15,tanvir
+R00060,EGG,Mohammadpur Krishi Market,2026-09-17,135.39,sadia
+R00061,EGG,Shwapno,2026-09-17,163.07,sadia
+R00062,POTATO,Karwan Bazar,2026-09-18,30.25,tanvir
+R00063,GARLIC,Shwapno,2026-09-18,121.88,tanvir
+R00064,CHICKEN,Shwapno,2026-09-18,228.27,tanvir
+R00065,PANGAS,Karwan Bazar,2026-09-18,442.96,tanvir
+R00066,OIL,Shwapno,2026-09-19,218.76,rafi
+R00067,ONION,Shwapno,2026-09-19,58.4,sadia
+R00068,CHICKEN,Shwapno,2026-09-19,238.27,tanvir
+R00069,SUGAR,Karwan Bazar,2026-09-20,132.26,tanvir
+R00070,POTATO,Shwapno,2026-09-20,34.85,tanvir
+R00071,GARLIC,Karwan Bazar,2026-09-20,112.79,tanvir
+R00072,CHILLI,Karwan Bazar,2026-09-20,85.63,sadia
+R00073,RICE,Karwan Bazar,2026-09-21,65.16,sadia
+R00074,ATTA,Karwan Bazar,2026-09-21,65.0,rafi
+R00075,ATTA,Mohammadpur Krishi Market,2026-09-21,69.85,sadia
+R00076,DAL,Mohammadpur Krishi Market,2026-09-21,124.34,sadia
+R00077,CHILLI,Shwapno,2026-09-21,94.31,sadia
+R00078,CHICKEN,Mohammadpur Krishi Market,2026-09-21,212.49,tanvir
+R00079,PANGAS,Mohammadpur Krishi Market,2026-09-21,375.99,rafi
+R00080,RICE,Mohammadpur Krishi Market,2026-09-22,60.21,sadia
+R00081,RICE,Shwapno,2026-09-22,62.37,tanvir
+R00082,OIL,Karwan Bazar,2026-09-22,193.44,rafi
+R00083,OIL,Mohammadpur Krishi Market,2026-09-22,184.42,tanvir
+R00084,ONION,Karwan Bazar,2026-09-22,34.48,rafi
+R00085,ONION,Mohammadpur Krishi Market,2026-09-22,35.26,sadia
+R00086,DAL,Karwan Bazar,2026-09-23,132.38,rafi
+R00087,SUGAR,Mohammadpur Krishi Market,2026-09-23,133.95,rafi
+R00088,SUGAR,Shwapno,2026-09-23,134.62,tanvir
+R00089,CHILLI,Mohammadpur Krishi Market,2026-09-23,88.92,rafi
+R00090,PANGAS,Shwapno,2026-09-23,398.51,sadia
+R00091,POTATO,Mohammadpur Krishi Market,2026-09-24,28.6,rafi
+R00092,EGG,Karwan Bazar,2026-09-24,138.64,sadia
+R00093,EGG,Shwapno,2026-09-24,145.04,rafi
+R00094,CHICKEN,Karwan Bazar,2026-09-24,247.92,rafi
+R00095,ATTA,Shwapno,2026-09-25,74.23,rafi
+R00096,DAL,Shwapno,2026-09-25,140.48,tanvir
+R00097,POTATO,Karwan Bazar,2026-09-25,37.33,sadia
+R00098,GARLIC,Shwapno,2026-09-25,133.09,sadia
+R00099,EGG,Mohammadpur Krishi Market,2026-09-25,135.84,sadia
+R00100,CHILLI,Mohammadpur Krishi Market,2026-09-26,77.97,tanvir
+R00101,EGG,Shwapno,2026-09-26,159.51,sadia
+R00102,RICE,Mohammadpur Krishi Market,2026-09-27,58.85,sadia
+R00103,ATTA,Shwapno,2026-09-27,77.31,rafi
+R00104,DAL,Shwapno,2026-09-27,153.56,sadia
+R00105,ONION,Karwan Bazar,2026-09-27,33.69,rafi
+R00106,PANGAS,Shwapno,2026-09-27,430.1,rafi
+R00107,CHILLI,Karwan Bazar,2026-09-28,86.49,sadia
+R00108,CHILLI,Shwapno,2026-09-28,98.19,sadia
+R00109,CHICKEN,Mohammadpur Krishi Market,2026-09-28,229.59,rafi
+R00110,RICE,Karwan Bazar,2026-09-29,66.42,sadia
+R00111,ATTA,Mohammadpur Krishi Market,2026-09-29,73.57,tanvir
+R00112,SUGAR,Mohammadpur Krishi Market,2026-09-29,129.89,rafi
+R00113,POTATO,Karwan Bazar,2026-09-29,30.93,tanvir
+R00114,POTATO,Mohammadpur Krishi Market,2026-09-29,30.18,rafi
+R00115,PANGAS,Mohammadpur Krishi Market,2026-09-29,352.15,rafi
+R00116,DAL,Karwan Bazar,2026-09-30,124.32,sadia
+R00117,OIL,Shwapno,2026-09-30,215.83,tanvir
+R00118,POTATO,Shwapno,2026-09-30,37.84,rafi
+R00119,SUGAR,Karwan Bazar,2026-10-01,143.78,rafi
+R00120,GARLIC,Mohammadpur Krishi Market,2026-10-01,108.45,rafi
+R00121,EGG,Mohammadpur Krishi Market,2026-10-01,124.49,sadia
+R00122,PANGAS,Karwan Bazar,2026-10-01,380.95,tanvir
+R00123,RICE,Shwapno,2026-10-02,66.29,rafi
+R00124,ATTA,Karwan Bazar,2026-10-02,73.02,rafi
+R00125,OIL,Karwan Bazar,2026-10-02,190.37,rafi
+R00126,OIL,Mohammadpur Krishi Market,2026-10-02,180.21,rafi
+R00127,SUGAR,Shwapno,2026-10-02,161.47,sadia
+R00128,ONION,Mohammadpur Krishi Market,2026-10-02,31.24,tanvir
+R00129,ONION,Shwapno,2026-10-02,34.53,tanvir
+R00130,CHICKEN,Karwan Bazar,2026-10-02,219.13,tanvir
+R00131,CHICKEN,Shwapno,2026-10-02,262.92,tanvir
+R00132,RICE,Mohammadpur Krishi Market,2026-10-03,60.16,rafi
+R00133,ONION,Karwan Bazar,2026-10-03,43.09,sadia
+R00134,CHICKEN,Mohammadpur Krishi Market,2026-10-03,205.56,tanvir
+R00135,OIL,Mohammadpur Krishi Market,2026-10-04,169.64,rafi
+R00136,SUGAR,Karwan Bazar,2026-10-04,145.86,sadia
+R00137,SUGAR,Shwapno,2026-10-04,161.69,sadia
+R00138,CHICKEN,Shwapno,2026-10-04,212.32,rafi
+R00139,DAL,Shwapno,2026-10-05,152.36,tanvir
+R00140,GARLIC,Shwapno,2026-10-05,128.47,sadia
+R00141,CHILLI,Karwan Bazar,2026-10-05,69.64,sadia
+R00142,EGG,Mohammadpur Krishi Market,2026-10-05,133.64,tanvir
+R00143,OIL,Karwan Bazar,2026-10-06,185.15,tanvir
+R00144,ONION,Shwapno,2026-10-06,40.81,tanvir
+R00145,POTATO,Karwan Bazar,2026-10-06,32.5,rafi
+R00146,POTATO,Mohammadpur Krishi Market,2026-10-06,29.47,rafi
+R00147,CHILLI,Mohammadpur Krishi Market,2026-10-06,87.69,rafi
+R00148,EGG,Shwapno,2026-10-06,148.79,tanvir
+R00149,CHICKEN,Karwan Bazar,2026-10-06,205.95,sadia
+R00150,RICE,Shwapno,2026-10-07,70.69,sadia
+R00151,ATTA,Mohammadpur Krishi Market,2026-10-07,70.0,sadia
+R00152,ATTA,Shwapno,2026-10-07,69.77,rafi
+R00153,DAL,Mohammadpur Krishi Market,2026-10-07,120.86,rafi
+R00154,ONION,Mohammadpur Krishi Market,2026-10-07,50.63,tanvir
+R00155,GARLIC,Karwan Bazar,2026-10-07,118.96,tanvir
+R00156,CHILLI,Shwapno,2026-10-07,106.65,tanvir
+R00157,PANGAS,Karwan Bazar,2026-10-07,414.86,sadia
+R00158,OIL,Shwapno,2026-10-08,189.27,tanvir
+R00159,SUGAR,Mohammadpur Krishi Market,2026-10-08,143.17,sadia
+R00160,POTATO,Shwapno,2026-10-08,25.83,sadia
+R00161,GARLIC,Mohammadpur Krishi Market,2026-10-08,106.96,tanvir
+R00162,RICE,Karwan Bazar,2026-10-09,62.46,tanvir
+R00163,ATTA,Karwan Bazar,2026-10-09,74.48,tanvir
+R00164,EGG,Karwan Bazar,2026-10-09,131.18,tanvir
+R00165,RICE,Shwapno,2026-10-10,69.53,tanvir
+R00166,ATTA,Mohammadpur Krishi Market,2026-10-10,71.99,sadia
+R00167,DAL,Karwan Bazar,2026-10-10,126.41,tanvir
+R00168,GARLIC,Mohammadpur Krishi Market,2026-10-10,111.11,rafi
+R00169,CHICKEN,Karwan Bazar,2026-10-10,220.36,tanvir
+R00170,CHICKEN,Shwapno,2026-10-10,230.94,rafi
+R00171,ATTA,Karwan Bazar,2026-10-11,68.9,tanvir
+R00172,OIL,Mohammadpur Krishi Market,2026-10-11,173.61,sadia
+R00173,ONION,Shwapno,2026-10-11,52.53,rafi
+R00174,POTATO,Shwapno,2026-10-11,31.95,rafi
+R00175,GARLIC,Shwapno,2026-10-11,143.74,tanvir
+R00176,EGG,Karwan Bazar,2026-10-11,134.0,sadia
+R00177,ATTA,Shwapno,2026-10-12,74.45,rafi
+R00178,SUGAR,Mohammadpur Krishi Market,2026-10-12,142.81,rafi
+R00179,SUGAR,Shwapno,2026-10-12,161.05,sadia
+R00180,CHILLI,Mohammadpur Krishi Market,2026-10-12,72.67,sadia
+R00181,RICE,Karwan Bazar,2026-10-13,58.55,tanvir
+R00182,CHILLI,Karwan Bazar,2026-10-13,68.26,tanvir
+R00183,OIL,Shwapno,2026-10-14,214.47,sadia
+R00184,ONION,Mohammadpur Krishi Market,2026-10-14,44.27,sadia
+R00185,GARLIC,Karwan Bazar,2026-10-14,130.41,rafi
+R00186,PANGAS,Shwapno,2026-10-14,441.72,sadia
+R00187,RICE,Mohammadpur Krishi Market,2026-10-15,56.76,tanvir
+R00188,DAL,Mohammadpur Krishi Market,2026-10-15,133.61,rafi
+R00189,OIL,Karwan Bazar,2026-10-15,205.08,tanvir
+R00190,POTATO,Karwan Bazar,2026-10-15,29.23,tanvir
+R00191,EGG,Shwapno,2026-10-15,146.14,rafi
+R00192,PANGAS,Mohammadpur Krishi Market,2026-10-15,344.35,tanvir
+R00193,SUGAR,Karwan Bazar,2026-10-16,140.07,rafi
+R00194,ONION,Karwan Bazar,2026-10-16,48.42,rafi
+R00195,EGG,Mohammadpur Krishi Market,2026-10-16,127.94,rafi
+R00196,CHICKEN,Mohammadpur Krishi Market,2026-10-16,216.57,rafi
+R00197,DAL,Mohammadpur Krishi Market,2026-10-17,130.13,sadia
+R00198,SUGAR,Shwapno,2026-10-17,157.14,rafi
+R00199,POTATO,Shwapno,2026-10-17,34.07,rafi
+R00200,CHILLI,Shwapno,2026-10-17,75.55,rafi
+R00201,CHICKEN,Karwan Bazar,2026-10-17,244.92,tanvir
+R00202,OIL,Mohammadpur Krishi Market,2026-10-18,184.06,sadia
+R00203,SUGAR,Mohammadpur Krishi Market,2026-10-18,143.84,tanvir
+R00204,GARLIC,Mohammadpur Krishi Market,2026-10-18,119.79,tanvir
+R00205,PANGAS,Shwapno,2026-10-18,398.94,tanvir
+R00206,RICE,Karwan Bazar,2026-10-19,64.21,tanvir
+R00207,ATTA,Karwan Bazar,2026-10-19,77.1,rafi
+R00208,SUGAR,Karwan Bazar,2026-10-19,148.32,rafi
+R00209,ONION,Shwapno,2026-10-19,36.25,tanvir
+R00210,EGG,Mohammadpur Krishi Market,2026-10-19,123.15,sadia
+R00211,EGG,Shwapno,2026-10-19,164.98,sadia
+R00212,RICE,Mohammadpur Krishi Market,2026-10-20,62.11,tanvir
+R00213,ATTA,Mohammadpur Krishi Market,2026-10-20,67.69,sadia
+R00214,OIL,Karwan Bazar,2026-10-20,195.01,tanvir
+R00215,CHILLI,Karwan Bazar,2026-10-20,108.47,sadia
+R00216,EGG,Karwan Bazar,2026-10-20,140.7,rafi
+R00217,POTATO,Karwan Bazar,2026-10-21,32.9,sadia
+R00218,CHICKEN,Mohammadpur Krishi Market,2026-10-21,223.94,tanvir
+R00219,RICE,Shwapno,2026-10-22,67.62,rafi
+R00220,ONION,Karwan Bazar,2026-10-22,49.13,tanvir
+R00221,GARLIC,Karwan Bazar,2026-10-22,113.9,sadia
+R00222,OIL,Shwapno,2026-10-23,209.78,sadia
+R00223,POTATO,Mohammadpur Krishi Market,2026-10-23,32.04,tanvir
+R00224,GARLIC,Shwapno,2026-10-23,135.66,tanvir
+R00225,CHICKEN,Shwapno,2026-10-23,282.87,sadia
+R00226,PANGAS,Karwan Bazar,2026-10-23,418.77,tanvir
+R00227,PANGAS,Mohammadpur Krishi Market,2026-10-23,423.61,rafi
+R00228,RICE,Shwapno,2026-10-24,68.58,rafi
+R00229,DAL,Mohammadpur Krishi Market,2026-10-24,133.39,rafi
+R00230,OIL,Shwapno,2026-10-24,218.71,sadia
+R00231,SUGAR,Karwan Bazar,2026-10-24,143.24,tanvir
+R00232,POTATO,Karwan Bazar,2026-10-24,27.92,rafi
+R00233,EGG,Mohammadpur Krishi Market,2026-10-24,126.18,rafi
+R00234,DAL,Karwan Bazar,2026-10-25,129.13,tanvir
+R00235,SUGAR,Mohammadpur Krishi Market,2026-10-25,130.76,sadia
+R00236,GARLIC,Shwapno,2026-10-25,138.65,sadia
+R00237,EGG,Shwapno,2026-10-25,144.58,rafi
+R00238,CHICKEN,Shwapno,2026-10-25,243.26,tanvir
+R00239,RICE,Mohammadpur Krishi Market,2026-10-26,57.81,rafi
+R00240,ATTA,Mohammadpur Krishi Market,2026-10-26,70.46,sadia
+R00241,PANGAS,Karwan Bazar,2026-10-26,384.28,rafi
+R00242,EGG,Karwan Bazar,2026-10-27,138.7,rafi
+R00243,CHICKEN,Mohammadpur Krishi Market,2026-10-27,200.37,sadia
+R00244,ATTA,Shwapno,2026-10-28,78.72,rafi
+R00245,DAL,Shwapno,2026-10-28,150.18,tanvir
+R00246,GARLIC,Karwan Bazar,2026-10-28,129.73,rafi
+R00247,GARLIC,Mohammadpur Krishi Market,2026-10-28,115.41,rafi
+R00248,CHILLI,Shwapno,2026-10-28,80.89,sadia
+R00249,ATTA,Karwan Bazar,2026-10-29,72.34,sadia
+R00250,ONION,Karwan Bazar,2026-10-29,43.48,tanvir
+R00251,ONION,Mohammadpur Krishi Market,2026-10-29,43.46,rafi
+R00252,ONION,Shwapno,2026-10-29,45.41,tanvir
+R00253,CHICKEN,Karwan Bazar,2026-10-29,235.18,rafi
+R00254,PANGAS,Mohammadpur Krishi Market,2026-10-29,315.98,rafi
+R00255,PANGAS,Shwapno,2026-10-29,476.34,tanvir
+R00256,RICE,Karwan Bazar,2026-10-30,62.6,tanvir
+R00257,OIL,Mohammadpur Krishi Market,2026-10-30,171.7,sadia
+R00258,POTATO,Mohammadpur Krishi Market,2026-10-30,29.99,sadia
+R00259,POTATO,Shwapno,2026-10-30,40.15,sadia
+R00260,CHILLI,Karwan Bazar,2026-10-30,76.2,sadia
+R00261,ONION,Karwan Bazar,2026-10-30,60.17,rafi

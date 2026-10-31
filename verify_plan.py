@@ -52,15 +52,11 @@ RESULTS: list[tuple[bool, str, str]] = []
 # instead of a wall of literals.
 PLAN_PRODUCT_COUNT = 12
 TABLE_COLUMNS = 6
-STARTER_MARKETS = [
-    "Karwan Bazar", "Mohammadpur Krishi Market", "Shwapno",
-]
 SAMPLE_RECORD_MIN = 250
 SAMPLE_RECORD_MAX = 300
 SAMPLE_USER_FILE_MIN_BYTES = 10
 REFERENCE_PRICE = 50.0
 HIGH_REFERENCE_PRICE = 200.0
-PCT_ABOVE_REFERENCE = 20.0
 PCT_OVER_LIMIT = 15.0
 Z_LIMIT = 2.0
 PERISHABLE_Z_LIMIT = 2.5
@@ -74,17 +70,12 @@ OVER_BUDGET = 120.0
 TOLERANCE = 1e-9
 ONION_UNIT_PRICE = 40.0
 EGG_UNIT_PRICE = 120.0
-HISTORY_LENGTH = 6
-SHORT_HISTORY_LENGTH = 3
-CHEAPEST_AVERAGE = 40.0
-RECENT_DAYS = 14
 STAT_MEAN = 20.0
 STAT_MEDIAN = 20.0
 STAT_MIN = 10.0
 STAT_MAX = 30.0
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 400
-TABLE_WIDTH = 800
 MIN_TABLE_ROWS = 100
 MIN_TABLE_HEIGHT = 200
 
@@ -206,7 +197,6 @@ section("5  The alert, cheapest-market and basket rules")
 onion = Product(
     "ONION", "Onion", "পেঁয়াজ", "kg", "Vegetables", reference_price=REFERENCE_PRICE
 )
-potato = Product("POTATO", "Potato", "আলু", "kg", "Vegetables", reference_price=40.0)
 settings = dict(config.DEFAULT_SETTINGS)
 
 # A history that varies a little, then a big jump: z is large and the

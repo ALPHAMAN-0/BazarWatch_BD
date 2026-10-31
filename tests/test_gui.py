@@ -801,7 +801,7 @@ class TestDropdownLabelsAreUnique(GuiTestCase):
         self._add_product("RICE2")
         tab = self.app._tabs["Log Price"]
         ids = {
-            tab._product_id_for(label)
+            widgets.product_id_for(tab._product_options, label)
             for label in tab.product_box["values"]
             if "Rice" in label
         }

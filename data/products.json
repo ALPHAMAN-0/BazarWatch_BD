@@ -1,0 +1,110 @@
+[
+  {
+    "product_id": "RICE",
+    "name": "Coarse rice",
+    "name_bn": "মোটা চাল",
+    "unit": "kg",
+    "category": "Grains",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "ATTA",
+    "name": "Atta (loose)",
+    "name_bn": "খোলা আটা",
+    "unit": "kg",
+    "category": "Grains",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "DAL",
+    "name": "Masoor dal (coarse)",
+    "name_bn": "মসুর ডাল",
+    "unit": "kg",
+    "category": "Pulses",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "OIL",
+    "name": "Soybean oil (bottled)",
+    "name_bn": "সয়াবিন তেল",
+    "unit": "litre",
+    "category": "Oil",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "SUGAR",
+    "name": "Sugar",
+    "name_bn": "চিনি",
+    "unit": "kg",
+    "category": "Grocery",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "ONION",
+    "name": "Onion (local)",
+    "name_bn": "দেশি পেঁয়াজ",
+    "unit": "kg",
+    "category": "Vegetables",
+    "reference_price": null,
+    "perishable": true
+  },
+  {
+    "product_id": "POTATO",
+    "name": "Potato",
+    "name_bn": "আলু",
+    "unit": "kg",
+    "category": "Vegetables",
+    "reference_price": null,
+    "perishable": true
+  },
+  {
+    "product_id": "GARLIC",
+    "name": "Garlic (local)",
+    "name_bn": "দেশি রসুন",
+    "unit": "kg",
+    "category": "Spices",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "CHILLI",
+    "name": "Green chilli",
+    "name_bn": "কাঁচা মরিচ",
+    "unit": "kg",
+    "category": "Vegetables",
+    "reference_price": null,
+    "perishable": true
+  },
+  {
+    "product_id": "EGG",
+    "name": "Egg (farm)",
+    "name_bn": "ফার্মের ডিম",
+    "unit": "hali",
+    "category": "Protein",
+    "reference_price": null,
+    "perishable": false
+  },
+  {
+    "product_id": "CHICKEN",
+    "name": "Broiler chicken",
+    "name_bn": "ব্রয়লার মুরগি",
+    "unit": "kg",
+    "category": "Protein",
+    "reference_price": null,
+    "perishable": true
+  },
+  {
+    "product_id": "PANGAS",
+    "name": "Pangas fish",
+    "name_bn": "পাঙাশ মাছ",
+    "unit": "kg",
+    "category": "Protein",
+    "reference_price": null,
+    "perishable": true
+  }
+]

@@ -100,9 +100,6 @@ class Product:
             "perishable": self.perishable,
         }
 
-    def is_perishable(self) -> bool:
-        return self.perishable
-
     @classmethod
     def from_dict(cls, data: dict) -> Product:
         """Rebuild a product, returning a PerishableProduct when flagged."""
@@ -166,9 +163,6 @@ class PerishableProduct(Product):
                 )
             ),
         )
-
-    def is_perishable(self) -> bool:
-        return True
 
 
 class PriceRecord:

@@ -106,7 +106,6 @@ class StatsTab(Tab):
             buttons, text="Refresh", command=self.refresh
         ).grid(row=0, column=2)
 
-        self.preview_var = tk.StringVar()
         self.preview = tk.Text(
             report_frame, height=12, width=110, wrap="none", font=("TkFixedFont", 10)
         )

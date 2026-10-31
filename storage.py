@@ -8,6 +8,8 @@ File rules (see plan section 8):
 * A missing file is created with sensible defaults.
 * A corrupt JSON file is renamed to ``<name>.corrupt-<timestamp>`` and the
   defaults are loaded instead, with a warning.
+* A file that cannot be read is treated the same way, so the app keeps
+  running and the next save cannot overwrite the original.
 * A malformed CSV row is skipped and reported, with a warning per problem.
 * Saves are safe: the data is written to ``<file>.tmp`` and then moved into
   place with ``os.replace``, so a crash mid-save never leaves a half-written
@@ -44,7 +46,9 @@ class Storage:
 
     def __init__(self, data_dir: Path | str):
         self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(parents=True, exist_ok=True)
+        # A folder that cannot be created is reported by the first load.
+        with contextlib.suppress(OSError):
+            self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.products_file = self.data_dir / "products.json"
         self.records_file = self.data_dir / "price_records.csv"
@@ -87,27 +91,51 @@ class Storage:
             number += 1
         return backup
 
+    def _set_aside(self, path: Path, problem: str) -> bool:
+        """Move an unusable file out of the way, and say so.
+
+        Returns whether it moved.  A file still in place must not be
+        written over, because it may be the only copy of the user's data.
+        """
+        backup = self._backup_name(path)
+        try:
+            shutil.move(str(path), str(backup))
+        except OSError as exc:
+            self.warnings.append(
+                f"{path.name} {problem}, and it could not be renamed ({exc}); "
+                "defaults were loaded and the file was left as it is."
+            )
+            return False
+        self.warnings.append(
+            f"{path.name} {problem}; it was renamed to {backup.name} and "
+            "defaults were loaded."
+        )
+        return True
+
+    def _create_file(self, path: Path, write) -> None:
+        """Create a missing file; if that fails, warn and carry on."""
+        try:
+            write()
+        except OSError as exc:
+            self.warnings.append(
+                f"{path.name} could not be created ({exc}); defaults were "
+                "loaded, but changes may not be saved."
+            )
+
     def _read_json(self, path: Path, default):
-        """Read JSON, backing up a corrupt file and returning ``default``."""
-        if not path.exists():
-            self._write_json(path, default)
-            return json.loads(json.dumps(default))
+        """Read JSON, returning ``default`` when the file cannot be used."""
         try:
             with open(path, encoding="utf-8") as handle:
                 return json.load(handle)
+        except FileNotFoundError:
+            moved = True
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            backup = self._backup_name(path)
-            # If the file cannot be moved aside, carry on: the defaults
-            # are still written below, and the warning tells the user
-            # what happened.
-            with contextlib.suppress(OSError):
-                shutil.move(str(path), str(backup))
-            self.warnings.append(
-                f"{path.name} was corrupt ({exc}); it was renamed to "
-                f"{backup.name} and defaults were loaded."
-            )
-            self._write_json(path, default)
-            return json.loads(json.dumps(default))
+            moved = self._set_aside(path, f"was corrupt ({exc})")
+        except OSError as exc:
+            moved = self._set_aside(path, f"could not be read ({exc})")
+        if moved:
+            self._create_file(path, lambda: self._write_json(path, default))
+        return json.loads(json.dumps(default))
 
     def _write_json(self, path: Path, data) -> None:
         """Write JSON safely: to a .tmp file first, then move it into place."""
@@ -197,10 +225,15 @@ class Storage:
             items = basket.get("items", {})
             if not isinstance(items, dict):
                 items = {}
-            baskets[username] = {
-                "budget": float(basket.get("budget", 0.0) or 0.0),
-                "items": {str(k): float(v) for k, v in items.items()},
-            }
+            try:
+                baskets[username] = {
+                    "budget": float(basket.get("budget", 0.0) or 0.0),
+                    "items": {str(k): float(v) for k, v in items.items()},
+                }
+            except (TypeError, ValueError):
+                self.warnings.append(
+                    f"{self.baskets_file.name}: skipped basket for '{username}'."
+                )
         return baskets
 
     def save_baskets(self, baskets: dict) -> None:
@@ -261,6 +294,20 @@ class Storage:
         self._write_json(self.settings_file, settings)
 
     # -- price records ------------------------------------------------------
+    def _read_record_rows(self) -> list[list[str]] | None:
+        """The rows of the records file, or None when it cannot be used."""
+        try:
+            with open(self.records_file, encoding="utf-8", newline="") as handle:
+                return list(csv.reader(handle))
+        except FileNotFoundError:
+            moved = True
+        except (OSError, UnicodeDecodeError, csv.Error) as exc:
+            moved = self._set_aside(self.records_file, f"could not be read ({exc})")
+        self.skipped_rows = []
+        if moved:
+            self._create_file(self.records_file, lambda: self.save_records([]))
+        return None
+
     def load_records(self, known_product_ids=None) -> list[PriceRecord]:
         """Load the price records, skipping and reporting malformed rows.
 
@@ -273,19 +320,12 @@ class Storage:
         either: the product may come back, and until then the history is
         not the app's to lose.
         """
-        if not self.records_file.exists():
-            self.skipped_rows = []
-            self.save_records([])
-            return []
-
         records: list[PriceRecord] = []
         seen_ids: set[str] = set()
         problems: list[str] = []
         skipped_rows: list[list[str]] = []
 
-        with open(self.records_file, encoding="utf-8", newline="") as handle:
-            rows = list(csv.reader(handle))
-
+        rows = self._read_record_rows()
         if not rows:
             return []
 

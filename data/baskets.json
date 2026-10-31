@@ -1,0 +1,38 @@
+{
+  "rafi": {
+    "budget": 1500.0,
+    "items": {
+      "RICE": 3.3,
+      "OIL": 4.0,
+      "SUGAR": 1.1,
+      "ONION": 2.4,
+      "CHILLI": 3.6
+    }
+  },
+  "sadia": {
+    "budget": 1500.0,
+    "items": {
+      "ATTA": 3.9,
+      "CHILLI": 2.7,
+      "GARLIC": 1.7,
+      "PANGAS": 3.1,
+      "DAL": 1.5
+    }
+  },
+  "tanvir": {
+    "budget": 1500.0,
+    "items": {
+      "CHICKEN": 2.2,
+      "POTATO": 3.0,
+      "ATTA": 3.7,
+      "GARLIC": 3.4,
+      "OIL": 1.8
+    }
+  },
+  "admin": {
+    "budget": 0.0,
+    "items": {
+      "RICE": 2.0
+    }
+  }
+}

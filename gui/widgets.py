@@ -41,9 +41,7 @@ class Tab(ttk.Frame):
 COLOUR_SPIKE = "#c62828"
 COLOUR_WATCH = "#ef6c00"
 COLOUR_NORMAL = ""
-COLOUR_HEADER_BG = "#eceff1"
 COLOUR_ALT_ROW = "#f5f7f8"
-COLOUR_SELECTION = "#bbdefb"
 
 # The colours of each alert level.
 LEVEL_COLOURS = {
@@ -150,7 +148,6 @@ class AlertTable(ttk.Frame):
         ``height`` is the number of rows the table shows before it scrolls.
         """
         super().__init__(parent, **kwargs)
-        self.column_defs = columns
         self.tree = ttk.Treeview(
             self,
             columns=[c[0] for c in columns],
@@ -230,24 +227,12 @@ class AlertTable(ttk.Frame):
         self.tree.bind("<Double-1>", handler)
 
 
-def label_value_frame(parent, rows: list[tuple[str, str]], **kwargs):
-    """A small two-column frame of label/value pairs.
-
-    Returns ``(frame, value_labels)`` where ``value_labels`` maps each label
-    to the StringVar holding its value, so the caller can update it.
-    """
-    frame = ttk.Frame(parent, **kwargs)
-    value_labels = {}
-    for index, (label, value) in enumerate(rows):
-        ttk.Label(frame, text=f"{label}:", width=22).grid(
-            row=index, column=0, sticky="w", padx=(6, 4), pady=3
-        )
-        var = tk.StringVar(value=value)
-        ttk.Label(frame, textvariable=var, width=40).grid(
-            row=index, column=1, sticky="w", padx=(0, 6), pady=3
-        )
-        value_labels[label] = var
-    return frame, value_labels
+def product_id_for(options: list[tuple[str, str]], chosen: str) -> str | None:
+    """The product ID a dropdown label stands for, or None if there is none."""
+    for label, product_id in options:
+        if label == chosen:
+            return product_id
+    return None
 
 
 def format_price(value) -> str:

@@ -12,6 +12,7 @@ from gui.widgets import (
     Tab,
     confirm,
     handle_error,
+    product_id_for,
     show_info,
 )
 
@@ -94,11 +95,8 @@ class EditRecordDialog(tk.Toplevel):
 
     def _selected_product_id(self) -> str:
         """The product ID the chosen label stands for."""
-        chosen = self.product_var.get()
-        for label, product_id in self._product_options:
-            if label == chosen:
-                return product_id
-        return self.record.product_id
+        chosen = product_id_for(self._product_options, self.product_var.get())
+        return chosen or self.record.product_id
 
     def _save(self) -> None:
         """Apply the changes."""
@@ -322,11 +320,7 @@ class RecordsTab(Tab):
 
     def _selected_product_id(self) -> str | None:
         """The product ID the filter stands for."""
-        chosen = self.product_var.get()
-        for label, product_id in self._product_options:
-            if label == chosen:
-                return product_id
-        return None
+        return product_id_for(self._product_options, self.product_var.get())
 
     def _update_buttons(self) -> None:
         """Enable Edit and Delete only when the action is allowed."""

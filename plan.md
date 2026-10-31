@@ -160,7 +160,8 @@ BazarWatch_BD/
 
 File rules:
 - Missing file → created with defaults.
-- Corrupt JSON → renamed to `*.corrupt-<timestamp>`, defaults loaded, warning shown at startup.
+- Corrupt JSON, or any data file that can't be read → renamed to `*.corrupt-<timestamp>`, defaults
+  loaded, warning shown at startup.
 - Bad CSV row (missing field, non-number price, bad date, unknown product, duplicate ID) → skipped and
   reported at startup, e.g. "Skipped 2 rows: line 14: price 'abc' is not a number".
 - Safe save: write `file.tmp`, then `os.replace()`, so a crash mid-save never leaves a half-written file.

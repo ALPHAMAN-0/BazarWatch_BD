@@ -10,7 +10,10 @@ __pycache__/
 .coverage.*
 htmlcov/
 
-# The runtime data folder is created from scratch by the app or by
-# `python generate_sample_data.py`, so it is not kept in the repository.
-data/
+# The sample files in data/ are part of the submission, so they are kept.
+# The error log and the backups of unusable files are not.
+data/error.log
+data/*.corrupt-*
+
+# Weekly reports are generated on demand.
 reports/

@@ -16,12 +16,19 @@ Built with Python and Tkinter, with NumPy for the statistics.
 
 ```bash
 pip install -r requirements.txt
-python generate_sample_data.py     # optional: fill data/ with demo data
 python main.py
 ```
 
 The app runs from any working directory: the `data/` and `reports/` folders are found
 relative to `main.py`.
+
+The repository includes the sample data in `data/`. The cheapest market and the basket
+only use prices from the last 14 days, so refresh the sample before a demo or a
+submission. This replaces everything in `data/`, including any prices you have entered:
+
+```bash
+python generate_sample_data.py --force
+```
 
 ### Demo accounts
 
@@ -93,8 +100,9 @@ record, excluding the record itself.
 | `Watch` | Exactly one rule fires.                                     |
 | `Normal`| Neither rule fires.                                         |
 
-Perishable products (onion, potato, chilli, chicken, pangash) use a stricter z-limit
-than the general one, because their prices move around more. An Admin can change the
+Perishable products (onion, potato, chilli, chicken, pangas) use looser limits than the
+others (2.5 SD and 25% instead of 2.0 SD and 15%), because their prices move around
+more. An Admin can change the
 thresholds, the minimum history length and the recent-days window under **Admin →
 Settings**.
 
@@ -133,8 +141,9 @@ All of them live in `data/` and are plain text you can read and edit.
 
 Writes are safe: the app writes a temporary file and then renames it over the old one,
 so an interrupted save cannot leave a half-written file behind. If a JSON file is
-corrupted it is moved aside as `<name>.corrupt-<timestamp>` and the app starts with
-defaults, telling you what happened instead of crashing.
+corrupted, or any data file cannot be read, it is moved aside as
+`<name>.corrupt-<timestamp>` and the app starts with defaults, telling you what happened
+instead of crashing.
 
 Passwords are stored as PBKDF2-HMAC-SHA256 hashes with a random salt, and are compared
 with `hmac.compare_digest`.
@@ -147,7 +156,7 @@ with `hmac.compare_digest`.
 python -m unittest discover -s tests -v
 ```
 
-444 tests. They all use temporary folders, so your real data is never touched. The
+454 tests. They all use temporary folders, so your real data is never touched. The
 interface tests drive the real Tk widgets and are skipped automatically when there is no
 display available (a headless CI machine).
 

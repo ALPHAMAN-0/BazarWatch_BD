@@ -6,7 +6,14 @@ import tkinter as tk
 from tkinter import ttk
 
 from analytics import basket_plan, budget_status
-from gui.widgets import AlertTable, Tab, format_price, handle_error, show_info
+from gui.widgets import (
+    AlertTable,
+    Tab,
+    format_price,
+    handle_error,
+    product_id_for,
+    show_info,
+)
 
 
 class BasketTab(Tab):
@@ -281,11 +288,7 @@ class BasketTab(Tab):
     # -- actions --------------------------------------------------------
     def _selected_product_id(self) -> str | None:
         """The ID of the product chosen in the dropdown."""
-        chosen = self.product_var.get()
-        for label, product_id in self._product_options:
-            if label == chosen:
-                return product_id
-        return None
+        return product_id_for(self._product_options, self.product_var.get())
 
     def _add_item(self) -> None:
         """Add or update an item in the basket."""

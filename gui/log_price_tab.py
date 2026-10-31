@@ -7,7 +7,7 @@ from datetime import date
 from tkinter import ttk
 
 from analytics import alert_level
-from gui.widgets import Tab, handle_error, level_label, show_info
+from gui.widgets import Tab, handle_error, level_label, product_id_for, show_info
 
 
 class LogPriceTab(Tab):
@@ -27,7 +27,6 @@ class LogPriceTab(Tab):
         self.date_var = tk.StringVar(value=date.today().isoformat())
         self.price_var = tk.StringVar()
 
-        self.result_var = tk.StringVar()
         self.detail_var = tk.StringVar()
         self.result_label = None
         # The dropdown labels and the product IDs they stand for.
@@ -128,16 +127,9 @@ class LogPriceTab(Tab):
         elif not markets:
             self.market_var.set("")
 
-    def _product_id_for(self, label: str) -> str | None:
-        """The product ID a dropdown label stands for."""
-        for option_label, product_id in self._product_options:
-            if option_label == label:
-                return product_id
-        return None
-
     def _selected_product_id(self) -> str | None:
         """The ID of the product chosen in the dropdown."""
-        return self._product_id_for(self.product_var.get())
+        return product_id_for(self._product_options, self.product_var.get())
 
     def _on_product(self) -> None:
         """Show the reference price of the chosen product."""
