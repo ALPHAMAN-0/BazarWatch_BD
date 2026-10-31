@@ -283,18 +283,24 @@ class BazarManager:
         """Edit a product's details.  Admin only."""
         self._require_admin()
         product = self.get_product(product_id)
+        # Everything is checked first, so a rejected edit changes nothing.
+        name = product.name
         if "name" in changes:
-            if not changes["name"] or not str(changes["name"]).strip():
+            name = str(changes["name"] or "").strip()
+            if not name:
                 raise ValidationError("Product name is required.")
-            product.name = str(changes["name"]).strip()
+        reference = product.reference_price
+        if "reference_price" in changes:
+            reference = validate_reference_price(changes["reference_price"])
+
+        product.name = name
+        product.reference_price = reference
         if "name_bn" in changes:
             product.name_bn = (changes["name_bn"] or "").strip()
         if "unit" in changes:
             product.unit = changes["unit"] or product.unit
         if "category" in changes:
             product.category = changes["category"] or product.category
-        if "reference_price" in changes:
-            product.reference_price = validate_reference_price(changes["reference_price"])
         if "perishable" in changes:
             # Rebuild so the class (and therefore the thresholds) matches.
             self.products[product.product_id] = self._build_product(

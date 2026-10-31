@@ -9,6 +9,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from manager import BazarManager
+from models import PerishableProduct
 from validators import (
     AuthError,
     DuplicateIDError,
@@ -234,6 +235,55 @@ class TestProductManagement(ManagerTestCase):
         self.login_member()
         with self.assertRaises(PermissionDeniedError):
             self.manager.add_product("MILK", "Milk", "", "kg", "Grocery")
+
+    def test_admin_can_edit_a_product(self):
+        self.login_admin()
+        self.manager.update_product(
+            "ONION", name="Red onion", name_bn="লাল পেঁয়াজ", unit="piece",
+            category="Grocery", reference_price="35",
+        )
+        product = BazarManager(self.data_dir).products["ONION"]
+        self.assertEqual(product.name, "Red onion")
+        self.assertEqual(product.name_bn, "লাল পেঁয়াজ")
+        self.assertEqual(product.unit, "piece")
+        self.assertEqual(product.category, "Grocery")
+        self.assertEqual(product.reference_price, 35.0)
+
+    def test_member_cannot_edit_a_product(self):
+        self.login_member()
+        with self.assertRaises(PermissionDeniedError):
+            self.manager.update_product("ONION", name="Red onion")
+
+    def test_editing_a_missing_product_is_reported(self):
+        self.login_admin()
+        with self.assertRaises(RecordNotFoundError):
+            self.manager.update_product("NOPE", name="Nothing")
+
+    def test_a_product_cannot_lose_its_name(self):
+        self.login_admin()
+        with self.assertRaises(ValidationError):
+            self.manager.update_product("ONION", name="   ")
+
+    def test_a_rejected_edit_changes_nothing(self):
+        self.login_admin()
+        before = self.manager.products["ONION"].name
+        with self.assertRaises(ValidationError):
+            self.manager.update_product(
+                "ONION", name="Red onion", reference_price="not a price"
+            )
+        self.assertEqual(self.manager.products["ONION"].name, before)
+
+    def test_changing_perishable_changes_the_alert_limits(self):
+        self.login_admin()
+        self.manager.update_product("RICE", perishable=True)
+        reloaded = BazarManager(self.data_dir).products["RICE"]
+        self.assertIsInstance(reloaded, PerishableProduct)
+        self.assertEqual(reloaded.spike_thresholds(self.manager.settings), (2.5, 25.0))
+
+        self.manager.update_product("RICE", perishable=False)
+        reloaded = BazarManager(self.data_dir).products["RICE"]
+        self.assertNotIsInstance(reloaded, PerishableProduct)
+        self.assertEqual(reloaded.spike_thresholds(self.manager.settings), (2.0, 15.0))
 
     def test_reference_price_can_be_set(self):
         self.login_admin()

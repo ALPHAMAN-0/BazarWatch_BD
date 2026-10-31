@@ -79,6 +79,9 @@ were not priced this week. Save it to `reports/weekly_report_YYYY-MM-DD.txt`.
 Manage users, products, markets and the alert thresholds. Only an Admin sees this tab,
 and the same check runs inside the manager, not just in the interface.
 
+**Edit product** changes a product's name, Bangla name, unit, category, reference price
+and perishable setting. Its ID cannot be changed, because the price records point to it.
+
 A product, market or setting changed here reaches the other tabs straight away, so the
 Log Price and basket dropdowns never offer a stale list.
 
@@ -156,7 +159,7 @@ with `hmac.compare_digest`.
 python -m unittest discover -s tests -v
 ```
 
-454 tests. They all use temporary folders, so your real data is never touched. The
+465 tests. They all use temporary folders, so your real data is never touched. The
 interface tests drive the real Tk widgets and are skipped automatically when there is no
 display available (a headless CI machine).
 
@@ -167,7 +170,7 @@ by driving the real interface:
 python verify_plan.py
 ```
 
-It reports `105 of 105 checks passed` when everything in the plan holds.
+It reports `106 of 106 checks passed` when everything in the plan holds.
 
 ---
 

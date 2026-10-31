@@ -28,7 +28,7 @@ from analytics import (
     product_statistics,
 )
 from generate_sample_data import generate
-from gui.admin_tab import AdminTab
+from gui.admin_tab import AdminTab, EditProductDialog
 from gui.basket_tab import BasketTab
 from gui.dashboard_tab import DashboardTab
 from gui.log_price_tab import LogPriceTab
@@ -859,6 +859,18 @@ else:
             sub.refresh()
             app.update_idletasks()
             check(f"the Admin {name} page is filled", bool(sub.winfo_children()))
+
+        # Editing a product, through the real dialog.
+        admin.products_tab.table.tree.selection_set("ONION")
+        original_name = manager.products["ONION"].name
+        dialog = cast(EditProductDialog, admin.products_tab._edit_product())
+        dialog.name_var.set("Red onion")
+        dialog._save()
+        check(
+            "the Admin can edit a product",
+            manager.products["ONION"].name == "Red onion",
+        )
+        manager.update_product("ONION", name=original_name)
 
         # Log out and back in as a Member: no Admin tab.
         app._logout()

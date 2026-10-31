@@ -180,6 +180,108 @@ class UsersSubTab(AdminSubTab):
         )
 
 
+class EditProductDialog(tk.Toplevel):
+    """The small window used to edit a product.
+
+    The product ID cannot be changed, because the price records point to it.
+    """
+
+    def __init__(self, parent, manager, product, on_saved):
+        super().__init__(parent)
+        self.manager = manager
+        self.product = product
+        self.on_saved = on_saved
+
+        self.title(f"Edit product {product.product_id}")
+        self.transient(parent)
+        self.resizable(False, False)
+
+        self.name_var = tk.StringVar(value=product.name)
+        self.name_bn_var = tk.StringVar(value=product.name_bn)
+        self.unit_var = tk.StringVar(value=product.unit)
+        self.category_var = tk.StringVar(value=product.category)
+        self.reference_var = tk.StringVar(
+            value=f"{product.reference_price:.2f}"
+            if product.reference_price is not None
+            else ""
+        )
+        self.perishable_var = tk.BooleanVar(value=product.perishable)
+
+        frame = ttk.Frame(self, padding=14)
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(1, weight=1)
+
+        ttk.Label(frame, text="Name:").grid(row=0, column=0, sticky="w", pady=5)
+        ttk.Entry(frame, textvariable=self.name_var, width=30).grid(
+            row=0, column=1, sticky="ew", pady=5
+        )
+
+        ttk.Label(frame, text="Bangla name:").grid(row=1, column=0, sticky="w", pady=5)
+        ttk.Entry(frame, textvariable=self.name_bn_var, width=30).grid(
+            row=1, column=1, sticky="ew", pady=5
+        )
+
+        ttk.Label(frame, text="Unit:").grid(row=2, column=0, sticky="w", pady=5)
+        ttk.Combobox(
+            frame,
+            textvariable=self.unit_var,
+            state="readonly",
+            values=config.UNITS,
+        ).grid(row=2, column=1, sticky="ew", pady=5)
+
+        ttk.Label(frame, text="Category:").grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Combobox(
+            frame,
+            textvariable=self.category_var,
+            state="readonly",
+            values=config.CATEGORIES,
+        ).grid(row=3, column=1, sticky="ew", pady=5)
+
+        ttk.Label(frame, text="Reference price (Tk):").grid(
+            row=4, column=0, sticky="w", pady=5
+        )
+        ttk.Entry(frame, textvariable=self.reference_var, width=30).grid(
+            row=4, column=1, sticky="ew", pady=5
+        )
+
+        ttk.Checkbutton(
+            frame, text="Perishable (looser spike limits)", variable=self.perishable_var
+        ).grid(row=5, column=1, sticky="w", pady=5)
+
+        self.error_var = tk.StringVar()
+        ttk.Label(frame, textvariable=self.error_var, foreground="#c62828").grid(
+            row=6, column=0, columnspan=2, sticky="w", pady=(8, 0)
+        )
+
+        buttons = ttk.Frame(frame)
+        buttons.grid(row=7, column=0, columnspan=2, sticky="e", pady=(12, 0))
+        ttk.Button(buttons, text="Cancel", command=self.destroy).grid(
+            row=0, column=0, padx=(0, 8)
+        )
+        ttk.Button(buttons, text="Save", command=self._save).grid(row=0, column=1)
+
+        self.grab_set()
+
+    def _save(self) -> None:
+        """Apply the changes."""
+        try:
+            self.manager.update_product(
+                self.product.product_id,
+                name=self.name_var.get(),
+                name_bn=self.name_bn_var.get(),
+                unit=self.unit_var.get(),
+                category=self.category_var.get(),
+                reference_price=self.reference_var.get(),
+                perishable=self.perishable_var.get(),
+            )
+        except Exception as exc:
+            # Keep the dialog open so the user can correct the value.
+            self.error_var.set(str(exc))
+            return
+        self.on_saved()
+        self.destroy()
+
+
 class ProductsSubTab(AdminSubTab):
     """Add, edit and remove products, and set the reference prices."""
 
@@ -283,12 +385,15 @@ class ProductsSubTab(AdminSubTab):
         buttons = ttk.Frame(self)
         buttons.grid(row=2, column=0, columnspan=4, sticky="w", pady=(10, 0))
         ttk.Button(
-            buttons, text="Set reference price", command=self._set_reference
+            buttons, text="Edit product", command=self._edit_product
         ).grid(row=0, column=0, padx=(0, 8))
         ttk.Button(
-            buttons, text="Remove product", command=self._remove_product
+            buttons, text="Set reference price", command=self._set_reference
         ).grid(row=0, column=1, padx=(0, 8))
-        ttk.Button(buttons, text="Refresh", command=self.refresh).grid(row=0, column=2)
+        ttk.Button(
+            buttons, text="Remove product", command=self._remove_product
+        ).grid(row=0, column=2, padx=(0, 8))
+        ttk.Button(buttons, text="Refresh", command=self.refresh).grid(row=0, column=3)
 
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
@@ -339,6 +444,24 @@ class ProductsSubTab(AdminSubTab):
         self.name_bn_var.set("")
         self.reference_var.set("")
         self.perishable_var.set(False)
+        self.refresh()
+        self._changed()
+
+    def _edit_product(self) -> EditProductDialog | None:
+        """Open the edit dialog for the selected product."""
+        product_id = self.table.selected_id()
+        if not product_id:
+            show_info(self, "Please select a product first.")
+            return None
+        return EditProductDialog(
+            self.winfo_toplevel(),
+            self.manager,
+            self.manager.get_product(product_id),
+            self._after_edit,
+        )
+
+    def _after_edit(self) -> None:
+        """Show the edited product here and on the other tabs."""
         self.refresh()
         self._changed()
 

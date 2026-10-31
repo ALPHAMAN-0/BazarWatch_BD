@@ -619,6 +619,67 @@ class TestAdminTabActions(GuiTestCase):
         products._remove_product()
         self.assertNotIn("MILK", self.manager.products)
 
+    def _edit_dialog(self, product_id):
+        """Open the edit dialog through the Products page."""
+        products = self.tab.products_tab
+        self._select(products.table, product_id)
+        return products._edit_product()
+
+    def test_editing_without_a_selection_shows_a_message(self):
+        products = self.tab.products_tab
+        products.table.tree.selection_remove(*products.table.tree.get_children())
+        _SHOWN["infos"].clear()
+        self.assertIsNone(products._edit_product())
+        self.assertTrue(_SHOWN["infos"])
+
+    def test_the_edit_dialog_starts_with_the_current_values(self):
+        self.manager.set_reference_price("ONION", 35.0)
+        dialog = self._edit_dialog("ONION")
+        product = self.manager.products["ONION"]
+        self.assertEqual(dialog.name_var.get(), product.name)
+        self.assertEqual(dialog.name_bn_var.get(), product.name_bn)
+        self.assertEqual(dialog.unit_var.get(), product.unit)
+        self.assertEqual(dialog.category_var.get(), product.category)
+        self.assertEqual(dialog.reference_var.get(), "35.00")
+        self.assertTrue(dialog.perishable_var.get())
+        dialog.destroy()
+
+    def test_saving_the_edit_dialog_changes_the_product_everywhere(self):
+        dialog = self._edit_dialog("ONION")
+        dialog.name_var.set("Red onion")
+        dialog.unit_var.set("piece")
+        dialog.perishable_var.set(False)
+        dialog._save()
+
+        self.assertFalse(dialog.winfo_exists())
+        product = self.manager.products["ONION"]
+        self.assertEqual(product.name, "Red onion")
+        self.assertEqual(product.unit, "piece")
+        self.assertFalse(product.perishable)
+        products = self.tab.products_tab
+        self.assertEqual(products.table.tree.item("ONION", "values")[1], "Red onion")
+        # The other tabs must not keep offering the old name.
+        labels = self.app._tabs["Log Price"].product_box["values"]
+        self.assertTrue(any("Red onion" in label for label in labels))
+
+    def test_cancelling_the_edit_dialog_changes_nothing(self):
+        before = self.manager.products["ONION"].name
+        dialog = self._edit_dialog("ONION")
+        dialog.name_var.set("Red onion")
+        dialog.destroy()
+        self.assertEqual(self.manager.products["ONION"].name, before)
+
+    def test_the_edit_dialog_keeps_a_bad_value_on_screen(self):
+        before = self.manager.products["ONION"].name
+        dialog = self._edit_dialog("ONION")
+        dialog.name_var.set("Red onion")
+        dialog.reference_var.set("not a price")
+        dialog._save()
+        self.assertTrue(dialog.winfo_exists())
+        self.assertIn("reference price", dialog.error_var.get().lower())
+        self.assertEqual(self.manager.products["ONION"].name, before)
+        dialog.destroy()
+
     def test_a_market_can_be_removed(self):
         markets = self.tab.markets_tab
         markets.market_var.set("Bashundhara")
